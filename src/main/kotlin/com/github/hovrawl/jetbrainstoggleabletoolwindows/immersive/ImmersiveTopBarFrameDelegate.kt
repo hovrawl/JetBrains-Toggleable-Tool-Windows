@@ -25,6 +25,10 @@ class ImmersiveTopBarFrameDelegate(
     private var previousBorder: javax.swing.border.Border? = null
     private var contentPane: JComponent? = null
 
+    // TODO: Future extension - Add animation support (fade/slide) when showing/hiding toolbar
+    // TODO: Future extension - Support per-frame override of global settings
+    // TODO: Future extension - Optional status bar auto-hide
+
     fun enable() {
         manager.log("ENABLED", "Enabling immersive mode for frame")
         

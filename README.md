@@ -87,6 +87,9 @@ Access settings via <kbd>Settings/Preferences</kbd> > <kbd>Tools</kbd> > <kbd>Co
 - Your original toolbar/navigation bar visibility preferences are preserved and restored when you disable the feature.
 - The feature respects fullscreen and presentation modes by temporarily suspending padding.
 - Works seamlessly with the existing Toggleable Islands feature.
+
+**Testing:**
+For manual testing instructions, see [TESTING.md](TESTING.md).
 <!-- Plugin description end -->
 
 ## Installation
