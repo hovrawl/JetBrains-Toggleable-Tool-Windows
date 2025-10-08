@@ -24,24 +24,42 @@ abstract class ToggleStripeAction(private val targetAnchor: ToolWindowAnchor) : 
 
         val service = project.getService(RememberedToolWindowsService::class.java)
 
-        if (activeWindow != null && activeAnchor == targetAnchor) {
-            // remember and hide
-            service.rememberId(targetAnchor, activeWindow.id)
-            activeWindow.hide(null)
+        // Collect all visible tool windows on the target stripe (supports split top/bottom)
+        val visibleOnStripe: List<ToolWindow> = twm.toolWindowIds
+            .mapNotNull { twm.getToolWindow(it) }
+            .filter { it.anchor == targetAnchor && it.isVisible }
+
+        val activeOnStripe = activeWindow != null && activeAnchor == targetAnchor
+
+        // Close behavior: if an active tool window exists on this stripe OR there are any visible on this stripe (even if focus is elsewhere), hide them all.
+        if (activeOnStripe || (activeWindow == null && visibleOnStripe.isNotEmpty())) {
+            if (activeOnStripe) {
+                service.rememberId(targetAnchor, activeWindow!!.id)
+            }
+            visibleOnStripe.forEach { it.hide(null) }
             return
         }
 
         // None active on this stripe: try to activate remembered
         val rememberedId = service.getRememberedId(targetAnchor)
-        if (rememberedId != null) {
-            val toOpen = twm.getToolWindow(rememberedId)
-            if (toOpen != null) {
-                // Ensure visibility
-                toOpen.activate(null, true)
-                return
-            }
+        val remembered = rememberedId?.let { twm.getToolWindow(it) }
+        if (remembered != null) {
+            remembered.activate(null, true)
+            return
         }
-        // If nothing remembered or invalid, do nothing.
+
+        // If nothing remembered or invalid, open the first available tool window at the top of the configured stripe
+        val top = findFirstAvailableToolWindowOnStripe(twm, targetAnchor)
+        top?.activate(null, true)
+    }
+
+    private fun findFirstAvailableToolWindowOnStripe(twm: ToolWindowManager, anchor: ToolWindowAnchor): ToolWindow? {
+        // Best-effort approximation of "top of the configured": pick the first available tool window with the given anchor.
+        return twm.toolWindowIds
+            .asSequence()
+            .mapNotNull { twm.getToolWindow(it) }
+            .filter { it.anchor == anchor && it.isAvailable }
+            .firstOrNull()
     }
 
     override fun update(e: AnActionEvent) {
