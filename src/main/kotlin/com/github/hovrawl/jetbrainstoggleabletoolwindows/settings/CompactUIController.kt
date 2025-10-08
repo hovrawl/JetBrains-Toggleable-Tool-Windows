@@ -57,7 +57,7 @@ class CompactUIController(private val project: Project) : Disposable {
         val settings = CompactUISettings.getInstance().state
         
         // Skip if pinned and suppressWhenPinned is true
-        if (settings.suppressWhenPinned && toolWindow.isAutoHide.not()) {
+        if (settings.suppressWhenPinned && !toolWindow.isAutoHide) {
             if (debugLog()) {
                 thisLogger().info("Compact UI: Skipping pinned window: ${toolWindow.id}")
             }
@@ -67,7 +67,8 @@ class CompactUIController(private val project: Project) : Disposable {
         // Skip if onlyWhenEditorFocused is true and editor is not focused
         // (This is a simplified check - actual implementation would need to check focus)
         if (settings.onlyWhenEditorFocused) {
-            // TODO: Add proper editor focus check
+            // TODO: Add proper editor focus check using FileEditorManager
+            // For now, we skip this check
         }
     }
 
@@ -76,9 +77,18 @@ class CompactUIController(private val project: Project) : Disposable {
 
         val settings = CompactUISettings.getInstance().state
         
+        // Filter out pinned windows if suppressWhenPinned is enabled
+        val windowsToShow = if (settings.suppressWhenPinned) {
+            windows.filter { it.isAutoHide }
+        } else {
+            windows
+        }
+        
+        if (windowsToShow.isEmpty()) return
+        
         alarm.cancelAllRequests()
         alarm.addRequest({
-            windows.forEach { window ->
+            windowsToShow.forEach { window ->
                 showFloating(window)
             }
         }, settings.hoverActivationDelayMs)
@@ -89,9 +99,18 @@ class CompactUIController(private val project: Project) : Disposable {
 
         val settings = CompactUISettings.getInstance().state
         
+        // Filter out pinned windows if suppressWhenPinned is enabled
+        val windowsToHide = if (settings.suppressWhenPinned) {
+            windows.filter { it.isAutoHide }
+        } else {
+            windows
+        }
+        
+        if (windowsToHide.isEmpty()) return
+        
         alarm.cancelAllRequests()
         alarm.addRequest({
-            windows.forEach { window ->
+            windowsToHide.forEach { window ->
                 hideFloating(window)
             }
         }, settings.autoHideDelayMs)
@@ -100,10 +119,12 @@ class CompactUIController(private val project: Project) : Disposable {
     fun forceHideAll(anchor: ToolWindowAnchor) {
         if (!isCompactEnabled()) return
 
+        val settings = CompactUISettings.getInstance().state
         val twm = ToolWindowManager.getInstance(project)
         val windowsToHide = twm.toolWindowIds
             .mapNotNull { twm.getToolWindow(it) }
             .filter { it.anchor == anchor && it.isVisible }
+            .filter { !settings.suppressWhenPinned || it.isAutoHide }
 
         windowsToHide.forEach { hideFloating(it) }
     }
@@ -121,16 +142,28 @@ class CompactUIController(private val project: Project) : Disposable {
             thisLogger().info("Compact UI: Showing floating window: ${window.id}")
         }
 
-        // Store original type if not already stored
-        if (!originalTypes.containsKey(window.id)) {
-            originalTypes[window.id] = window.type
-        }
+        try {
+            // Store original type if not already stored
+            if (!originalTypes.containsKey(window.id)) {
+                originalTypes[window.id] = window.type
+            }
 
-        // Switch to floating mode
-        ApplicationManager.getApplication().invokeLater {
-            window.type = ToolWindowType.FLOATING
-            window.show(null)
-            floatingWindows[window.id] = window
+            // Switch to floating mode
+            ApplicationManager.getApplication().invokeLater {
+                try {
+                    window.type = ToolWindowType.FLOATING
+                    window.show(null)
+                    floatingWindows[window.id] = window
+                } catch (e: Exception) {
+                    if (debugLog()) {
+                        thisLogger().warn("Compact UI: Error showing floating window ${window.id}", e)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            if (debugLog()) {
+                thisLogger().warn("Compact UI: Error in showFloating for ${window.id}", e)
+            }
         }
     }
 
@@ -139,9 +172,21 @@ class CompactUIController(private val project: Project) : Disposable {
             thisLogger().info("Compact UI: Hiding floating window: ${window.id}")
         }
 
-        ApplicationManager.getApplication().invokeLater {
-            window.hide(null)
-            floatingWindows.remove(window.id)
+        try {
+            ApplicationManager.getApplication().invokeLater {
+                try {
+                    window.hide(null)
+                    floatingWindows.remove(window.id)
+                } catch (e: Exception) {
+                    if (debugLog()) {
+                        thisLogger().warn("Compact UI: Error hiding floating window ${window.id}", e)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            if (debugLog()) {
+                thisLogger().warn("Compact UI: Error in hideFloating for ${window.id}", e)
+            }
         }
     }
 
@@ -154,17 +199,30 @@ class CompactUIController(private val project: Project) : Disposable {
         
         // Restore original types
         ApplicationManager.getApplication().invokeLater {
-            originalTypes.forEach { (id, originalType) ->
-                val window = ToolWindowManager.getInstance(project).getToolWindow(id)
-                if (window != null) {
-                    window.type = originalType
-                    if (window.isVisible) {
-                        window.hide(null)
+            try {
+                val twm = ToolWindowManager.getInstance(project)
+                originalTypes.forEach { (id, originalType) ->
+                    try {
+                        val window = twm.getToolWindow(id)
+                        if (window != null) {
+                            window.type = originalType
+                            if (window.isVisible) {
+                                window.hide(null)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        if (debugLog()) {
+                            thisLogger().warn("Compact UI: Error restoring window $id", e)
+                        }
                     }
                 }
+                originalTypes.clear()
+                floatingWindows.clear()
+            } catch (e: Exception) {
+                if (debugLog()) {
+                    thisLogger().warn("Compact UI: Error during cleanup", e)
+                }
             }
-            originalTypes.clear()
-            floatingWindows.clear()
         }
         
         stopListening()
@@ -183,9 +241,12 @@ class CompactUIController(private val project: Project) : Disposable {
             project.getService(CompactUIController::class.java)
 
         fun notifyAllControllersToCleanup() {
-            // This would be called when Compact UI is disabled globally
-            // We need to cleanup all open projects' controllers
-            // For now, this is a placeholder - actual implementation would iterate through open projects
+            // This is called when Compact UI is disabled globally
+            // Cleanup all open projects' controllers
+            com.intellij.openapi.project.ProjectManager.getInstance().openProjects.forEach { project ->
+                val controller = getInstance(project)
+                controller.cleanup()
+            }
         }
     }
 }
