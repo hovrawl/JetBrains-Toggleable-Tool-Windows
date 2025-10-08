@@ -4,6 +4,7 @@ import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiSetti
 import com.intellij.ide.ui.UISettings
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ex.WindowManagerEx
 import com.intellij.openapi.wm.impl.IdeGlassPaneImpl
 import com.intellij.util.Alarm
 import java.awt.*
@@ -28,8 +29,10 @@ class ImmersiveTopBarFrameDelegate(
         manager.log("ENABLED", "Enabling immersive mode for frame")
         
         ApplicationManager.getApplication().invokeLater {
-            createRevealZone()
-            applyEdgePadding()
+            if (!isInFullscreenOrPresentationMode()) {
+                createRevealZone()
+                applyEdgePadding()
+            }
             hideToolbars()
         }
     }
@@ -51,8 +54,33 @@ class ImmersiveTopBarFrameDelegate(
         hideAlarm = null
     }
 
+    private fun isInFullscreenOrPresentationMode(): Boolean {
+        // Try to detect fullscreen mode
+        val windowManager = WindowManagerEx.getInstanceEx()
+        val frameHelper = windowManager.getFrameHelper(project)
+        
+        // Check if frame is in fullscreen (GraphicsDevice.isFullScreenSupported)
+        val isFullscreen = try {
+            val device = frame.graphicsConfiguration?.device
+            device?.fullScreenWindow == frame
+        } catch (e: Exception) {
+            false
+        }
+        
+        // Check presentation mode via UISettings
+        val isPresentationMode = UISettings.getInstance().presentationMode
+        
+        return isFullscreen || isPresentationMode
+    }
+
     private fun createRevealZone() {
         removeRevealZone()
+        
+        // Don't create reveal zone in fullscreen/presentation mode
+        if (isInFullscreenOrPresentationMode()) {
+            manager.log("REVEAL_ZONE_SKIPPED", "Skipping reveal zone in fullscreen/presentation mode")
+            return
+        }
         
         val settings = CompactUiSettings.getInstance().state
         val height = settings.revealZoneHeight
@@ -71,7 +99,7 @@ class ImmersiveTopBarFrameDelegate(
         zone.bounds = Rectangle(0, 0, glassPane.width, height)
         
         // Add mouse listeners
-        zone.addMouseListener(object : MouseAdapter() {
+        val mouseAdapter = object : MouseAdapter() {
             override fun mouseEntered(e: MouseEvent) {
                 manager.log("SHOW_REQUEST", "Mouse entered reveal zone")
                 cancelHideTimer()
@@ -79,8 +107,17 @@ class ImmersiveTopBarFrameDelegate(
             }
             
             override fun mouseExited(e: MouseEvent) {
+                // Schedule hide with delay
                 manager.log("HIDE_SCHEDULED", "Mouse exited reveal zone, scheduling hide")
                 scheduleHide()
+            }
+        }
+        
+        zone.addMouseListener(mouseAdapter)
+        zone.addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
+            override fun mouseMoved(e: MouseEvent) {
+                // Cancel hide if mouse is moving in reveal zone
+                cancelHideTimer()
             }
         })
         
@@ -117,6 +154,12 @@ class ImmersiveTopBarFrameDelegate(
     }
 
     private fun applyEdgePadding() {
+        // Don't apply padding in fullscreen/presentation mode
+        if (isInFullscreenOrPresentationMode()) {
+            manager.log("PADDING_SKIPPED", "Skipping padding in fullscreen/presentation mode")
+            return
+        }
+        
         val settings = CompactUiSettings.getInstance().state
         val padding = settings.edgePadding
         val applySides = settings.applySidesAndBottom

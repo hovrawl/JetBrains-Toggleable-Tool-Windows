@@ -2,6 +2,7 @@ package com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive
 
 import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiSettings
 import com.intellij.ide.ui.UISettings
+import com.intellij.ide.ui.UISettingsListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -20,11 +21,31 @@ class ImmersiveTopBarManager : ProjectManagerListener {
     private var originalShowNavigationBar: Boolean? = null
     private var userPreferenceShowMainToolbar: Boolean = true
     private var userPreferenceShowNavigationBar: Boolean = true
+    private var isTrackingUISettingsChanges = false
 
     init {
         log("INIT", "ImmersiveTopBarManager initialized")
         ApplicationManager.getApplication().messageBus.connect()
             .subscribe(ProjectManager.TOPIC, this)
+        
+        // Subscribe to UISettings changes to track user manual changes
+        ApplicationManager.getApplication().messageBus.connect()
+            .subscribe(UISettingsListener.TOPIC, UISettingsListener { uiSettings ->
+                onUISettingsChanged(uiSettings)
+            })
+    }
+
+    private fun onUISettingsChanged(uiSettings: UISettings) {
+        // Only track manual changes when feature is enabled and we're not the ones changing it
+        if (isTrackingUISettingsChanges && CompactUiSettings.getInstance().state.enableAutoHideTopBar) {
+            // User manually changed toolbar/navbar settings while feature is active
+            // Update our stored preferences
+            SwingUtilities.invokeLater {
+                userPreferenceShowMainToolbar = uiSettings.showMainToolbar
+                userPreferenceShowNavigationBar = uiSettings.showNavigationBar
+                log("USER_PREF_UPDATED", "User preferences updated via manual change: toolbar=$userPreferenceShowMainToolbar, navbar=$userPreferenceShowNavigationBar")
+            }
+        }
     }
 
     override fun projectOpened(project: Project) {
@@ -75,9 +96,11 @@ class ImmersiveTopBarManager : ProjectManagerListener {
                     userPreferenceShowNavigationBar = uiSettings.showNavigationBar
                     log("STATE_PRESERVED", "Original states: toolbar=$originalShowMainToolbar, navbar=$originalShowNavigationBar")
                 }
+                isTrackingUISettingsChanges = true
                 frameDelegates.values.forEach { it.enable() }
             } else {
                 // Disabling feature
+                isTrackingUISettingsChanges = false
                 frameDelegates.values.forEach { it.disable() }
                 restoreOriginalState()
             }
