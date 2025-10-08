@@ -91,8 +91,10 @@ class CompactUIController(private val project: Project) : Disposable {
         
         if (!isEligible(toolWindow)) {
             if (isDebugLoggingEnabled()) {
-                if (toolWindow.anchor.isHorizontal && settings.suppressWhenPinned) {
-                    logger.info("SUPPRESSED_PINNED - $id is pinned")
+                if (settings.suppressWhenPinned && !toolWindow.isAutoHide) {
+                    logger.info("SUPPRESSED_PINNED - $id is pinned (isAutoHide=false)")
+                } else {
+                    logger.info("NOT_ELIGIBLE - $id")
                 }
             }
             return
@@ -240,6 +242,7 @@ class CompactUIController(private val project: Project) : Disposable {
         if (!toolWindow.isAvailable) return false
         
         // Check if pinned windows should be suppressed
+        // In IntelliJ: isAutoHide = true means unpinned, isAutoHide = false means pinned
         if (settings.suppressWhenPinned && !toolWindow.isAutoHide) {
             return false
         }
