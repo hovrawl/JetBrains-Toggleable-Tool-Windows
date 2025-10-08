@@ -9,6 +9,15 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiConfigurable"
+                id="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiConfigurable"
+                displayName="Compact UI"/>
+        <applicationService
+                serviceImplementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiSettings"/>
+        <applicationService
+                serviceImplementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive.ImmersiveTopBarManager"/>
     </extensions>
 
     <actions>
