@@ -18,6 +18,8 @@
                 serviceImplementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiSettings"/>
         <applicationService
                 serviceImplementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive.ImmersiveTopBarManager"/>
+        <postStartupActivity
+                implementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.startup.ImmersiveTopBarStartupActivity"/>
     </extensions>
 
     <actions>

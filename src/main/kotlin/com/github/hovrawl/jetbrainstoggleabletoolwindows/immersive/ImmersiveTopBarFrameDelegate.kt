@@ -47,6 +47,20 @@ class ImmersiveTopBarFrameDelegate(
         }
     }
 
+    fun refresh() {
+        manager.log("REFRESH", "Refreshing frame delegate with new settings")
+        
+        ApplicationManager.getApplication().invokeLater {
+            // Recreate reveal zone with new dimensions
+            if (!isInFullscreenOrPresentationMode()) {
+                createRevealZone()
+                // Reapply padding in case it changed
+                removeEdgePadding()
+                applyEdgePadding()
+            }
+        }
+    }
+
     fun dispose() {
         manager.log("DISPOSE", "Disposing frame delegate")
         disable()

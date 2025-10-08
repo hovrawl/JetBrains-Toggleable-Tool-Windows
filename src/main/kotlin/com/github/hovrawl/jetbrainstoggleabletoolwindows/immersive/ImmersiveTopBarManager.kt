@@ -107,6 +107,18 @@ class ImmersiveTopBarManager : ProjectManagerListener {
         }
     }
 
+    fun onSettingsUpdated() {
+        log("SETTINGS_UPDATED", "Settings updated (not enabled/disabled), refreshing frames")
+        val settings = CompactUiSettings.getInstance().state
+        
+        if (settings.enableAutoHideTopBar) {
+            SwingUtilities.invokeLater {
+                // Refresh all frame delegates to pick up new settings
+                frameDelegates.values.forEach { it.refresh() }
+            }
+        }
+    }
+
     fun updateUserPreferences() {
         val uiSettings = UISettings.getInstance()
         userPreferenceShowMainToolbar = uiSettings.showMainToolbar

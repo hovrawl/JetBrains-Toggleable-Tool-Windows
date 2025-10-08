@@ -83,6 +83,8 @@ class CompactUiConfigurable : Configurable {
 
     override fun apply() {
         val settings = CompactUiSettings.getInstance()
+        val oldEnabled = settings.state.enableAutoHideTopBar
+        
         settings.state.enableAutoHideTopBar = enableAutoHideCheckBox?.isSelected ?: false
         settings.state.revealZoneHeight = revealZoneHeightSpinner?.value as? Int ?: 4
         settings.state.hideDelay = hideDelaySpinner?.value as? Int ?: 700
@@ -92,8 +94,16 @@ class CompactUiConfigurable : Configurable {
         settings.state.enableAnimation = enableAnimationCheckBox?.isSelected ?: false
         settings.state.debugLogging = debugLoggingCheckBox?.isSelected ?: false
 
+        val newEnabled = settings.state.enableAutoHideTopBar
+        
         // Notify manager of settings change
-        ImmersiveTopBarManager.getInstance().onSettingsChanged()
+        if (oldEnabled != newEnabled) {
+            // Enabled/disabled state changed
+            ImmersiveTopBarManager.getInstance().onSettingsChanged()
+        } else if (newEnabled) {
+            // Settings changed while feature is enabled
+            ImmersiveTopBarManager.getInstance().onSettingsUpdated()
+        }
     }
 
     override fun reset() {
