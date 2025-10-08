@@ -33,18 +33,25 @@ abstract class ToggleStripeAction(private val targetAnchor: ToolWindowAnchor) : 
 
         // Close behavior: if an active tool window exists on this stripe OR there are any visible on this stripe (even if focus is elsewhere), hide them all.
         if (activeOnStripe || (activeWindow == null && visibleOnStripe.isNotEmpty())) {
-            if (activeOnStripe) {
+            // Remember all currently visible tool windows on this stripe (so we can reopen them together)
+            val idsToRemember = visibleOnStripe.map { it.id }
+            if (idsToRemember.isNotEmpty()) {
+                service.rememberIds(targetAnchor, idsToRemember)
+            } else if (activeOnStripe) {
+                // Fallback: remember the active one if somehow list is empty
                 service.rememberId(targetAnchor, activeWindow!!.id)
             }
             visibleOnStripe.forEach { it.hide(null) }
             return
         }
 
-        // None active on this stripe: try to activate remembered
-        val rememberedId = service.getRememberedId(targetAnchor)
-        val remembered = rememberedId?.let { twm.getToolWindow(it) }
-        if (remembered != null) {
-            remembered.activate(null, true)
+        // None active on this stripe: try to activate remembered (possibly multiple)
+        val rememberedIds = service.getRememberedIds(targetAnchor)
+        val windows = rememberedIds.mapNotNull { twm.getToolWindow(it) }
+        if (windows.isNotEmpty()) {
+            // Activate the first and show the rest to restore both sections
+            windows.first().activate(null, true)
+            windows.drop(1).forEach { it.show(null) }
             return
         }
 
