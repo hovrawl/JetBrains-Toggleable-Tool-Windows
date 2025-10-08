@@ -17,6 +17,36 @@
 - [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
 - [ ] Configure the [CODECOV_TOKEN](https://docs.codecov.com/docs/quick-start) secret for automated test coverage reports on PRs
 
+## Plugin-specific Implementation Tasks: Toggleable Tool Windows
+
+- [ ] Define per-project state storage for last-remembered tool window IDs per stripe (left/right/bottom):
+  - [ ] Create a ProjectService implementing PersistentStateComponent with fields like lastLeftId, lastRightId, lastBottomId.
+  - [ ] Validate/clear IDs on project open; ensure they correspond to existing tool windows.
+- [ ] Implement core toggle logic shared across stripes:
+  - [ ] Create an abstract ToggleStripeAction (AnAction) that determines current active tool window and its stripe (via ToolWindowManager.getActiveToolWindowId and ToolWindow.anchor).
+  - [ ] If the active tool window is on this action’s stripe: hide it (toolWindow.hide(null)) and remember its ID in the ProjectService.
+  - [ ] If none is active on this stripe: fetch remembered ID from ProjectService; if valid, activate/show it (toolWindow.activate(null, true) or show(null)).
+  - [ ] Update remembered ID when a different tool window on the same stripe becomes active before hiding.
+  - [ ] Handle floating/detached windows as belonging to their original stripe.
+- [ ] Provide concrete actions for each stripe:
+  - [ ] ToggleLeftStripeToolWindow
+  - [ ] ToggleRightStripeToolWindow
+  - [ ] ToggleBottomStripeToolWindow
+- [ ] Register actions in plugin.xml with stable action IDs and presentation:
+  - [ ] Add three <action> entries with text/description and group them appropriately for discoverability.
+  - [ ] Optionally create a Keymap group to suggest bindings.
+- [ ] Edge cases and robustness:
+  - [ ] If remembered ID is invalid or tool window is unavailable (ToolWindowManager.getToolWindow(id) == null), skip safely.
+  - [ ] When first invoked with no remembered ID and no active window on that stripe, do nothing.
+  - [ ] Resolve focus ambiguities by relying on ToolWindowManager.getActiveToolWindowId; fall back to PlatformDataKeys.TOOL_WINDOW.
+- [ ] Tests (optional but recommended):
+  - [ ] Add BasePlatformTestCase tests to simulate action execution and assert remembered IDs and visibility changes where feasible.
+- [ ] Documentation and usage:
+  - [ ] Update README and plugin description to clearly state behavior and provide suggested keybindings (e.g., Alt+1/Alt+2/Alt+3 if not conflicting).
+  - [ ] Add a short “How to bind keys” section: Settings/Preferences > Keymap, search by action name.
+- [ ] Manual verification:
+  - [ ] runIde and verify toggling for Project/Structure (left), Commit/TODO (right), Run/Debug/Terminal (bottom) behaves as expected.
+
 <!-- Plugin description -->
 This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
 
