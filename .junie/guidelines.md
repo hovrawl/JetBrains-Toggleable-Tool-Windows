@@ -3,6 +3,34 @@ JetBrains-Toggleable-Tool-Windows – Development Guidelines
 Scope
 - This document captures project-specific knowledge to speed up work on this IntelliJ Platform plugin. It assumes familiarity with Gradle, Kotlin, and IntelliJ Platform Plugin development.
 
+Plugin Purpose & Behavior
+- Goal: Provide toggle actions per tool-window stripe (left, right, bottom) that remember the last active tool window on that stripe.
+- Expected behavior per stripe action (Left/Right/Bottom):
+  1) When invoked and a tool window on that stripe is active/focused, hide it and remember it as the active window for that stripe.
+  2) When invoked again and no tool window is active on that stripe, re-open (activate) the remembered window for that stripe.
+  3) If another tool window on the same stripe was activated since, update the memory to that one upon hide.
+- Scope per stripe:
+  - Left: Project, Structure, Services, etc.
+  - Right: Commit, TODO, Problems, etc.
+  - Bottom: Run, Debug, Terminal, Problems, Build, etc.
+- Actions & bindings:
+  - Provide three actions: ToggleLeftStripeToolWindow, ToggleRightStripeToolWindow, ToggleBottomStripeToolWindow.
+  - Users can bind shortcuts via Settings/Preferences > Keymap (search by action id or name). Suggested examples: Alt+1 (Left toggle), Alt+2 (Right toggle), Alt+3 (Bottom toggle) — adjust to avoid conflicts.
+- State storage strategy:
+  - Store per-project last-remembered tool window id for each stripe in a ProjectService (persistent or in-memory; persistent preferred using @State + PersistentStateComponent).
+  - Clear or validate ids on project open/close; if the remembered id no longer exists, pick the next available (e.g., most recently active on that stripe) or do nothing.
+- Edge cases to handle:
+  - No active tool window on the stripe when first invoked: do nothing or activate the remembered one if available.
+  - Multiple active/focused components: derive the stripe from ToolWindowManager.getActiveToolWindowId() or focus owner, then map to stripe.
+  - Tool window temporarily unavailable (e.g., disabled by IDE): detect via ToolWindowManager.getToolWindow(id) == null and skip.
+  - Floating or detached windows: treat as belonging to their original stripe; hide/activate accordingly.
+- Implementation pointers (when implementing):
+  - ToolWindow APIs: com.intellij.openapi.wm.ToolWindowManager, ToolWindow, ToolWindowId.
+  - Stripe classification: ToolWindow.anchor (ToolWindowAnchor.LEFT/RIGHT/BOTTOM) or layout info from ToolWindowManager.
+  - Hiding/Showing: toolWindow.hide(null) and toolWindow.activate(null, true) or show(null) depending on UX; use ApplicationManager.invokeLater if needed.
+  - Tracking activity: ToolWindowManager.getActiveToolWindowId() and/or AnAction event context (PlatformDataKeys.TOOL_WINDOW) to find current.
+  - Register actions in plugin.xml with stable action ids and presentation; optionally add a ToggleToolWindowAction subclass for shared logic.
+
 Build and Configuration
 - Java toolchain: The project builds against Java 21 (see build.gradle.kts → kotlin.jvmToolchain(21)).
   - Local dev: Install JDK 21 (Temurin, Oracle, or JetBrains Runtime 21) and ensure JAVA_HOME points to it. On Windows PowerShell:
