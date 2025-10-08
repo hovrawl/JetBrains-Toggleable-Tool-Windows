@@ -10,7 +10,7 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 
-abstract class ToggleStripeAction(private val targetAnchor: ToolWindowAnchor) : AnAction(), DumbAware {
+abstract class ToggleIslandAction(private val targetAnchor: ToolWindowAnchor) : AnAction(), DumbAware {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
@@ -24,28 +24,28 @@ abstract class ToggleStripeAction(private val targetAnchor: ToolWindowAnchor) : 
 
         val service = project.getService(RememberedToolWindowsService::class.java)
 
-        // Collect all visible tool windows on the target stripe (supports split top/bottom)
-        val visibleOnStripe: List<ToolWindow> = twm.toolWindowIds
+        // Collect all visible tool windows on the target island (supports split top/bottom)
+        val visibleOnIsland: List<ToolWindow> = twm.toolWindowIds
             .mapNotNull { twm.getToolWindow(it) }
             .filter { it.anchor == targetAnchor && it.isVisible }
 
-        val activeOnStripe = activeWindow != null && activeAnchor == targetAnchor
+        val activeOnIsland = activeWindow != null && activeAnchor == targetAnchor
 
-        // Close behavior: if an active tool window exists on this stripe OR there are any visible on this stripe (even if focus is elsewhere), hide them all.
-        if (activeOnStripe || (activeWindow == null && visibleOnStripe.isNotEmpty())) {
-            // Remember all currently visible tool windows on this stripe (so we can reopen them together)
-            val idsToRemember = visibleOnStripe.map { it.id }
+        // Close behavior: if an active tool window exists on this island OR there are any visible on this island (even if focus is elsewhere), hide them all.
+        if (activeOnIsland || (activeWindow == null && visibleOnIsland.isNotEmpty())) {
+            // Remember all currently visible tool windows on this island (so we can reopen them together)
+            val idsToRemember = visibleOnIsland.map { it.id }
             if (idsToRemember.isNotEmpty()) {
                 service.rememberIds(targetAnchor, idsToRemember)
-            } else if (activeOnStripe) {
+            } else if (activeOnIsland) {
                 // Fallback: remember the active one if somehow list is empty
                 service.rememberId(targetAnchor, activeWindow!!.id)
             }
-            visibleOnStripe.forEach { it.hide(null) }
+            visibleOnIsland.forEach { it.hide(null) }
             return
         }
 
-        // None active on this stripe: try to activate remembered (possibly multiple)
+        // None active on this island: try to activate remembered (possibly multiple)
         val rememberedIds = service.getRememberedIds(targetAnchor)
         val windows = rememberedIds.mapNotNull { twm.getToolWindow(it) }
         if (windows.isNotEmpty()) {
@@ -55,12 +55,12 @@ abstract class ToggleStripeAction(private val targetAnchor: ToolWindowAnchor) : 
             return
         }
 
-        // If nothing remembered or invalid, open the first available tool window at the top of the configured stripe
-        val top = findFirstAvailableToolWindowOnStripe(twm, targetAnchor)
+        // If nothing remembered or invalid, open the first available tool window at the top of the configured island
+        val top = findFirstAvailableToolWindowOnIsland(twm, targetAnchor)
         top?.activate(null, true)
     }
 
-    private fun findFirstAvailableToolWindowOnStripe(twm: ToolWindowManager, anchor: ToolWindowAnchor): ToolWindow? {
+    private fun findFirstAvailableToolWindowOnIsland(twm: ToolWindowManager, anchor: ToolWindowAnchor): ToolWindow? {
         // Best-effort approximation of "top of the configured": pick the first available tool window with the given anchor.
         return twm.toolWindowIds
             .asSequence()

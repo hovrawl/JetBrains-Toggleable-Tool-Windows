@@ -16,7 +16,7 @@ class RememberedToolWindowsService(private val project: Project) : PersistentSta
         var lastLeftId: String? = null,
         var lastRightId: String? = null,
         var lastBottomId: String? = null,
-        // New multi-remembered ids per stripe
+        // New multi-remembered ids per island
         var lastLeftIds: MutableList<String> = mutableListOf(),
         var lastRightIds: MutableList<String> = mutableListOf(),
         var lastBottomIds: MutableList<String> = mutableListOf(),

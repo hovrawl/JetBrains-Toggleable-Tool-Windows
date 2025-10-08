@@ -7,8 +7,8 @@
 ## Template ToDo list
 - [x] Create a new [IntelliJ Platform Plugin Template][template] project.
 - [ ] Get familiar with the [template documentation][template].
-- [ ] Adjust the [pluginGroup](./gradle.properties) and [pluginName](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml) and [sources package](./src/main/kotlin).
-- [ ] Adjust the plugin description in `README` (see [Tips][docs:plugin-description])
+- [x] Adjust the [pluginGroup](./gradle.properties) and [pluginName](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml) and [sources package](./src/main/kotlin).
+- [x] Adjust the plugin description in `README` (see [Tips][docs:plugin-description])
 - [ ] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
 - [ ] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
 - [ ] Set the `MARKETPLACE_ID` in the above README badges. You can obtain it once the plugin is published to JetBrains Marketplace.
@@ -19,25 +19,25 @@
 
 ## Plugin-specific Implementation Tasks: Toggleable Tool Windows
 
-- [ ] Define per-project state storage for last-remembered tool window IDs per stripe (left/right/bottom):
+- [ ] Define per-project state storage for last-remembered tool window IDs per island (left/right/bottom):
   - [ ] Create a ProjectService implementing PersistentStateComponent with fields like lastLeftId, lastRightId, lastBottomId.
   - [ ] Validate/clear IDs on project open; ensure they correspond to existing tool windows.
-- [ ] Implement core toggle logic shared across stripes:
-  - [ ] Create an abstract ToggleStripeAction (AnAction) that determines current active tool window and its stripe (via ToolWindowManager.getActiveToolWindowId and ToolWindow.anchor).
-  - [ ] If the active tool window is on this action’s stripe: hide it (toolWindow.hide(null)) and remember its ID in the ProjectService.
-  - [ ] If none is active on this stripe: fetch remembered ID from ProjectService; if valid, activate/show it (toolWindow.activate(null, true) or show(null)).
-  - [ ] Update remembered ID when a different tool window on the same stripe becomes active before hiding.
-  - [ ] Handle floating/detached windows as belonging to their original stripe.
-- [ ] Provide concrete actions for each stripe:
-  - [ ] ToggleLeftStripeToolWindow
-  - [ ] ToggleRightStripeToolWindow
-  - [ ] ToggleBottomStripeToolWindow
+- [ ] Implement core toggle logic shared across islands:
+  - [ ] Create an abstract ToggleIslandAction (AnAction) that determines current active tool window and its island (via ToolWindowManager.getActiveToolWindowId and ToolWindow.anchor).
+  - [ ] If the active tool window is on this action’s island: hide it (toolWindow.hide(null)) and remember its ID in the ProjectService.
+  - [ ] If none is active on this island: fetch remembered ID from ProjectService; if valid, activate/show it (toolWindow.activate(null, true) or show(null)).
+  - [ ] Update remembered ID when a different tool window on the same island becomes active before hiding.
+  - [ ] Handle floating/detached windows as belonging to their original island.
+- [ ] Provide concrete actions for each island:
+  - [ ] ToggleLeftIslandToolWindow
+  - [ ] ToggleRightIslandToolWindow
+  - [ ] ToggleBottomIslandToolWindow
 - [ ] Register actions in plugin.xml with stable action IDs and presentation:
   - [ ] Add three <action> entries with text/description and group them appropriately for discoverability.
   - [ ] Optionally create a Keymap group to suggest bindings.
 - [ ] Edge cases and robustness:
   - [ ] If remembered ID is invalid or tool window is unavailable (ToolWindowManager.getToolWindow(id) == null), skip safely.
-  - [ ] When first invoked with no remembered ID and no active window on that stripe, do nothing.
+  - [ ] When first invoked with no remembered ID and no active window on that island, do nothing.
   - [ ] Resolve focus ambiguities by relying on ToolWindowManager.getActiveToolWindowId; fall back to PlatformDataKeys.TOOL_WINDOW.
 - [ ] Tests (optional but recommended):
   - [ ] Add BasePlatformTestCase tests to simulate action execution and assert remembered IDs and visibility changes where feasible.
@@ -48,11 +48,18 @@
   - [ ] runIde and verify toggling for Project/Structure (left), Commit/TODO (right), Run/Debug/Terminal (bottom) behaves as expected.
 
 <!-- Plugin description -->
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+Toggleable Islands adds three actions that let you quickly hide and re‑open the last active tool window on each island (left, right, bottom).
 
-This specific section is a source for the [plugin.xml](/src/main/resources/META-INF/plugin.xml) file which will be extracted by the [Gradle](/build.gradle.kts) during the build process.
+How it works:
+- Each island has a dedicated toggle action: Left, Right, Bottom.
+- If a tool window on that island is currently active, invoking the action hides it and remembers it as the last active for that island.
+- If no tool window on that island is active, invoking the action re‑opens the last remembered tool window (if available).
+- If you activate a different tool window on the same island, the remembered ID updates accordingly.
 
-To keep everything working, do not remove `<!-- ... -->` sections. 
+Notes:
+- Works with common tool windows such as Project/Structure/Services (left), Commit/TODO/Problems (right), and Run/Debug/Terminal/Build (bottom).
+- Floating/detached tool windows are treated as belonging to their original island.
+- Suggested keybindings (you can customize in Keymap): Alt+1 (Left), Alt+2 (Right), Alt+3 (Bottom), adjusting to avoid conflicts.
 <!-- Plugin description end -->
 
 ## Installation

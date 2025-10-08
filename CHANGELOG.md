@@ -2,6 +2,8 @@
 
 # JetBrains-Toggleable-Tool-Windows Changelog
 
-## [Unreleased]
+## [0.0.1] - 2025-10-08
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Initial release: toggle actions for Left/Right/Bottom tool window islands that remember and restore the last active tool window per island.
+- Project-level service to store last-remembered tool window IDs.
+- Basic action registrations and descriptions.

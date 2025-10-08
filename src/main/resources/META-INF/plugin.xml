@@ -12,16 +12,16 @@
     </extensions>
 
     <actions>
-        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleLeftStripeToolWindow"
-                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleLeftStripeToolWindow"
+        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleLeftIslandToolWindow"
+                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleLeftIslandToolWindow"
                 text="Toggle Left Island"
                 description="Toggle visibility of the left island"/>
-        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleRightStripeToolWindow"
-                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleRightStripeToolWindow"
+        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleRightIslandToolWindow"
+                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleRightIslandToolWindow"
                 text="Toggle Right Island"
                 description="Toggle visibility of the right island"/>
-        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleBottomStripeToolWindow"
-                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleBottomStripeToolWindow"
+        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleBottomIslandToolWindow"
+                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleBottomIslandToolWindow"
                 text="Toggle Bottom Island"
                 description="Toggle visibility of the bottom island"/>
     </actions>
