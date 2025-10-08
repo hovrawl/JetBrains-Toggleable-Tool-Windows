@@ -1,6 +1,8 @@
 package com.github.hovrawl.jetbrainstoggleabletoolwindows.actions
 
+import com.github.hovrawl.jetbrainstoggleabletoolwindows.controller.CompactUIController
 import com.github.hovrawl.jetbrainstoggleabletoolwindows.services.RememberedToolWindowsService
+import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUISettings
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -16,6 +18,14 @@ abstract class ToggleIslandAction(private val targetAnchor: ToolWindowAnchor) : 
         val project = e.project ?: return
         val twm = ToolWindowManager.getInstance(project)
 
+        // Check if Compact UI is enabled
+        val compactUISettings = CompactUISettings.getInstance().state
+        if (compactUISettings.enabled) {
+            handleCompactUIMode(project, twm)
+            return
+        }
+
+        // Original behavior when Compact UI is disabled
         val activeId = twm.activeToolWindowId
             ?: e.getData(CommonDataKeys.PROJECT)?.let { null } // explicit null; we'll rely on remembered id
 
@@ -58,6 +68,37 @@ abstract class ToggleIslandAction(private val targetAnchor: ToolWindowAnchor) : 
         // If nothing remembered or invalid, open the first available tool window at the top of the configured island
         val top = findFirstAvailableToolWindowOnIsland(twm, targetAnchor)
         top?.activate(null, true)
+    }
+
+    private fun handleCompactUIMode(project: Project, twm: ToolWindowManager) {
+        val controller = CompactUIController.getInstance(project)
+        val service = project.getService(RememberedToolWindowsService::class.java)
+
+        // Collect all visible tool windows on the target island that are managed by Compact UI
+        val visibleOnIsland: List<ToolWindow> = twm.toolWindowIds
+            .mapNotNull { twm.getToolWindow(it) }
+            .filter { it.anchor == targetAnchor && it.isVisible }
+
+        if (visibleOnIsland.isNotEmpty()) {
+            // Hide all visible windows on this island
+            val idsToRemember = visibleOnIsland.map { it.id }
+            service.rememberIds(targetAnchor, idsToRemember)
+            controller.forceHideAll()
+            return
+        }
+
+        // Show remembered windows
+        val rememberedIds = service.getRememberedIds(targetAnchor)
+        if (rememberedIds.isNotEmpty()) {
+            // In Compact UI mode, show the first remembered window
+            controller.requestShow(rememberedIds.first(), "toggle_action")
+        } else {
+            // Find first available window on the island
+            val firstWindow = findFirstAvailableToolWindowOnIsland(twm, targetAnchor)
+            firstWindow?.let {
+                controller.requestShow(it.id, "toggle_action")
+            }
+        }
     }
 
     private fun findFirstAvailableToolWindowOnIsland(twm: ToolWindowManager, anchor: ToolWindowAnchor): ToolWindow? {

@@ -60,6 +60,45 @@ Notes:
 - Works with common tool windows such as Project/Structure/Services (left), Commit/TODO/Problems (right), and Run/Debug/Terminal/Build (bottom).
 - Floating/detached tool windows are treated as belonging to their original island.
 - Suggested keybindings (you can customize in Keymap): Alt+1 (Left), Alt+2 (Right), Alt+3 (Bottom), adjusting to avoid conflicts.
+
+## Compact UI Mode
+
+The plugin offers a **Compact UI** mode that enables tool windows to appear as transient floating overlays when you hover over their stripe icons, and automatically hide when you move the mouse away. This provides a more streamlined workspace while keeping quick access to tool windows.
+
+### Features
+
+- **Hover to Show**: Tool windows appear automatically when you hover over their icons in the tool window stripes (left, right, bottom)
+- **Auto-Hide**: Windows disappear after a configurable delay when you move the mouse away
+- **Floating Presentation**: Windows appear as floating overlays that don't affect your editor layout
+- **Seamless Integration**: Works alongside the existing island toggle actions
+
+### Settings
+
+Access Compact UI settings via **Settings/Preferences > Tools > Compact UI**:
+
+- **Enable Compact UI**: Toggle the feature on/off (default: off)
+- **Hover activation delay (ms)**: How long to wait before showing a window on hover (default: 150ms)
+- **Auto-hide delay (ms)**: How long to wait before hiding a window after mouse exit (default: 500ms)
+- **Only hide when editor refocuses**: Additional condition for auto-hiding (default: enabled)
+- **Suppress floating for pinned tool windows**: Whether to exclude pinned windows from Compact UI behavior (default: enabled)
+- **Enable debug logging**: Show detailed logs for troubleshooting (default: disabled)
+
+### How It Works with Toggle Actions
+
+When Compact UI is enabled:
+- The toggle actions (Alt+1/2/3 or your custom bindings) still work to show/hide tool windows
+- Showing a window uses the hover delay and floating presentation
+- Hiding windows triggers the auto-hide mechanism
+- When you disable Compact UI, all windows are restored to their original presentation and the normal toggle behavior resumes
+
+### Manual Verification
+
+To verify Compact UI is working correctly:
+1. Enable Compact UI in settings
+2. Hover over a tool window icon - it should appear after the activation delay
+3. Move mouse away - it should hide after the auto-hide delay
+4. Toggle the feature off - windows should restore to normal behavior instantly
+5. If suppressWhenPinned is enabled, pinned windows should be ignored
 <!-- Plugin description end -->
 
 ## Installation
