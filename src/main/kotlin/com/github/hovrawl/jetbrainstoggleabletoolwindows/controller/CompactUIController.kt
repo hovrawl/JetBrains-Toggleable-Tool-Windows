@@ -22,6 +22,7 @@ class CompactUIController(private val project: Project) : Disposable {
 
     private val logger = Logger.getInstance(CompactUIController::class.java)
     private val alarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+    private val stripeHoverDetector = StripeHoverDetector(project, this)
     
     // State tracking
     private data class WindowState(
@@ -36,6 +37,8 @@ class CompactUIController(private val project: Project) : Disposable {
 
     init {
         setupListeners()
+        // Try to install stripe hover detection
+        stripeHoverDetector.install()
     }
 
     private fun setupListeners() {
@@ -299,6 +302,9 @@ class CompactUIController(private val project: Project) : Disposable {
             component.removeMouseListener(listener)
         }
         mouseListeners.clear()
+
+        // Uninstall stripe hover detection
+        stripeHoverDetector.uninstall()
 
         // Restore all window types
         restoreAllWindowTypes()

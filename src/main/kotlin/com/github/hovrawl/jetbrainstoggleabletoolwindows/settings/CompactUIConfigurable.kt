@@ -1,7 +1,7 @@
 package com.github.hovrawl.jetbrainstoggleabletoolwindows.settings
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.SearchableConfigurable
-import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.FormBuilder
@@ -10,7 +10,7 @@ import javax.swing.JPanel
 import javax.swing.JSpinner
 import javax.swing.SpinnerNumberModel
 
-class CompactUIConfigurable(private val project: Project) : SearchableConfigurable {
+class CompactUIConfigurable : SearchableConfigurable {
 
     private var enabledCheckBox: JBCheckBox? = null
     private var hoverDelaySpinner: JSpinner? = null
@@ -71,7 +71,7 @@ class CompactUIConfigurable(private val project: Project) : SearchableConfigurab
         state.debugLogging = debugLoggingCheckBox?.isSelected ?: false
 
         // Notify all open projects to refresh behavior
-        project.messageBus.syncPublisher(CompactUISettingsListener.TOPIC).settingsChanged()
+        ApplicationManager.getApplication().messageBus.syncPublisher(CompactUISettingsListener.TOPIC).settingsChanged()
     }
 
     override fun reset() {
