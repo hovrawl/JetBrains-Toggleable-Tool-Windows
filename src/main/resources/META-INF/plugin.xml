@@ -12,4 +12,19 @@
         <toolWindow factoryClass="com.github.hovrawl.jetbrainstoggleabletoolwindows.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
         <postStartupActivity implementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.startup.MyProjectActivity" />
     </extensions>
+
+    <actions>
+        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleLeftStripeToolWindow"
+                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleLeftStripeToolWindow"
+                text="Toggle Left Stripe Tool Window"
+                description="Toggle visibility of the last active tool window on the left stripe"/>
+        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleRightStripeToolWindow"
+                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleRightStripeToolWindow"
+                text="Toggle Right Stripe Tool Window"
+                description="Toggle visibility of the last active tool window on the right stripe"/>
+        <action id="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleBottomStripeToolWindow"
+                class="com.github.hovrawl.jetbrainstoggleabletoolwindows.actions.ToggleBottomStripeToolWindow"
+                text="Toggle Bottom Stripe Tool Window"
+                description="Toggle visibility of the last active tool window on the bottom stripe"/>
+    </actions>
 </idea-plugin>
