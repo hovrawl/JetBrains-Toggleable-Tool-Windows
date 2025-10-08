@@ -9,6 +9,11 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUIConfigurable"
+                id="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUIConfigurable"
+                displayName="Compact UI"/>
     </extensions>
 
     <actions>

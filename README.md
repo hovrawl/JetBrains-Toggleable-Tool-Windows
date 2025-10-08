@@ -1,51 +1,19 @@
-# JetBrains-Toggleable-Tool-Windows
+# Toggleable Tool Windows
 
 ![Build](https://github.com/hovrawl/JetBrains-Toggleable-Tool-Windows/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
 
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [x] Get familiar with the [template documentation][template].
-- [x] Adjust the [pluginGroup](./gradle.properties) and [pluginName](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml) and [sources package](./src/main/kotlin).
-- [x] Adjust the plugin description in `README` (see [Tips][docs:plugin-description])
-- [x] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
-- [x] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
-- [ ] Set the `MARKETPLACE_ID` in the above README badges. You can obtain it once the plugin is published to JetBrains Marketplace.
-- [ ] Set the [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html?from=IJPluginTemplate) related [secrets](https://github.com/JetBrains/intellij-platform-plugin-template#environment-variables).
-- [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
-- [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
-- [ ] Configure the [CODECOV_TOKEN](https://docs.codecov.com/docs/quick-start) secret for automated test coverage reports on PRs
+## Overview
 
-## Plugin-specific Implementation Tasks: Toggleable Tool Windows
+Toggleable Tool Windows is an IntelliJ Platform plugin that provides smart toggle actions for tool window islands (left, right, bottom), allowing you to quickly hide and restore your workspace layout with keyboard shortcuts.
 
-- [ ] Define per-project state storage for last-remembered tool window IDs per island (left/right/bottom):
-  - [ ] Create a ProjectService implementing PersistentStateComponent with fields like lastLeftId, lastRightId, lastBottomId.
-  - [ ] Validate/clear IDs on project open; ensure they correspond to existing tool windows.
-- [ ] Implement core toggle logic shared across islands:
-  - [ ] Create an abstract ToggleIslandAction (AnAction) that determines current active tool window and its island (via ToolWindowManager.getActiveToolWindowId and ToolWindow.anchor).
-  - [ ] If the active tool window is on this action’s island: hide it (toolWindow.hide(null)) and remember its ID in the ProjectService.
-  - [ ] If none is active on this island: fetch remembered ID from ProjectService; if valid, activate/show it (toolWindow.activate(null, true) or show(null)).
-  - [ ] Update remembered ID when a different tool window on the same island becomes active before hiding.
-  - [ ] Handle floating/detached windows as belonging to their original island.
-- [ ] Provide concrete actions for each island:
-  - [ ] ToggleLeftIslandToolWindow
-  - [ ] ToggleRightIslandToolWindow
-  - [ ] ToggleBottomIslandToolWindow
-- [ ] Register actions in plugin.xml with stable action IDs and presentation:
-  - [ ] Add three <action> entries with text/description and group them appropriately for discoverability.
-  - [ ] Optionally create a Keymap group to suggest bindings.
-- [ ] Edge cases and robustness:
-  - [ ] If remembered ID is invalid or tool window is unavailable (ToolWindowManager.getToolWindow(id) == null), skip safely.
-  - [ ] When first invoked with no remembered ID and no active window on that island, do nothing.
-  - [ ] Resolve focus ambiguities by relying on ToolWindowManager.getActiveToolWindowId; fall back to PlatformDataKeys.TOOL_WINDOW.
-- [ ] Tests (optional but recommended):
-  - [ ] Add BasePlatformTestCase tests to simulate action execution and assert remembered IDs and visibility changes where feasible.
-- [ ] Documentation and usage:
-  - [ ] Update README and plugin description to clearly state behavior and provide suggested keybindings (e.g., Alt+1/Alt+2/Alt+3 if not conflicting).
-  - [ ] Add a short “How to bind keys” section: Settings/Preferences > Keymap, search by action name.
-- [ ] Manual verification:
-  - [ ] runIde and verify toggling for Project/Structure (left), Commit/TODO (right), Run/Debug/Terminal (bottom) behaves as expected.
+## Features
+
+- **Island-based Toggle Actions**: Dedicated toggle actions for Left, Right, and Bottom tool window islands
+- **Multi-window Support**: Remember and restore multiple tool windows per island simultaneously
+- **Compact UI Mode**: Advanced floating tool window mode with hover activation and auto-hide
+- **Persistent State**: Remembers your last active tool windows across IDE sessions
 
 <!-- Plugin description -->
 Toggleable Islands adds three actions that let you quickly hide and re‑open the last active tool window on each island (left, right, bottom).
@@ -62,11 +30,58 @@ Notes:
 - Suggested keybindings (you can customize in Keymap): Alt+1 (Left), Alt+2 (Right), Alt+3 (Bottom), adjusting to avoid conflicts.
 <!-- Plugin description end -->
 
+## Compact UI Mode
+
+Compact UI Mode is an advanced feature that transforms tool windows into floating panels with smart hover activation and auto-hide behavior:
+
+### Features
+- **Floating Tool Windows**: Tool windows appear as floating panels instead of docked
+- **Hover Activation**: Automatically show tool windows when hovering over the stripe area
+- **Auto-hide**: Tool windows automatically hide after a configurable delay
+- **Editor-focused**: Optional mode to only activate when editor has focus
+- **Pinned Window Support**: Option to suppress behavior for pinned tool windows
+- **Debug Logging**: Built-in logging for troubleshooting
+
+### Configuration
+
+Access Compact UI settings via: **Settings/Preferences** > **Tools** > **Compact UI**
+
+Available settings:
+- **Enable Compact UI Mode**: Toggle the feature on/off
+- **Hover activation delay (ms)**: Delay before showing tool windows on hover (default: 150ms)
+- **Auto-hide delay (ms)**: Delay before hiding inactive tool windows (default: 500ms)
+- **Only when editor focused**: Restrict activation to when editor has focus (default: enabled)
+- **Suppress when pinned**: Don't apply Compact UI to pinned tool windows (default: enabled)
+- **Enable debug logging**: Log Compact UI events for troubleshooting (default: disabled)
+
+## Usage
+
+### Setting Up Keybindings
+
+1. Open **Settings/Preferences** > **Keymap**
+2. Search for "Toggle Left Island", "Toggle Right Island", or "Toggle Bottom Island"
+3. Assign keyboard shortcuts (suggested: Alt+1 for Left, Alt+2 for Right, Alt+3 for Bottom)
+4. Adjust as needed to avoid conflicts with existing shortcuts
+
+### Basic Workflow
+
+1. Work with your tool windows normally (Project, Terminal, Debug, etc.)
+2. Press your assigned shortcut to hide all visible tool windows on that island
+3. Press the same shortcut again to restore your previously visible tool windows
+4. The plugin remembers which windows were visible per island
+
+### With Compact UI Mode
+
+1. Enable Compact UI Mode in settings
+2. Toggle actions now show tool windows as floating panels
+3. Tool windows auto-hide based on your configured delay settings
+4. Hover behavior is automatically managed by the plugin
+
 ## Installation
 
 - Using the IDE built-in plugin system:
   
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "JetBrains-Toggleable-Tool-Windows"</kbd> >
+  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "Toggleable Tool Windows"</kbd> >
   <kbd>Install</kbd>
   
 - Using JetBrains Marketplace:
@@ -81,6 +96,26 @@ Notes:
   Download the [latest release](https://github.com/hovrawl/JetBrains-Toggleable-Tool-Windows/releases/latest) and install it manually using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
 
+## Roadmap
+
+- [ ] Enhance hover detection for Compact UI Mode
+- [ ] Add support for top tool window anchor
+- [ ] Improve editor focus detection
+- [ ] Add animation options for floating windows
+- [ ] Support custom window placement in Compact UI Mode
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+This project is licensed under the terms specified in the repository.
+
+## Acknowledgments
+
+- Built with the [IntelliJ Platform Plugin Template][template]
+- Inspired by workspace management needs of IntelliJ Platform users
 
 ---
 Plugin based on the [IntelliJ Platform Plugin Template][template].
