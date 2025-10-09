@@ -42,7 +42,7 @@ abstract class ToggleIslandAction(private val targetAnchor: ToolWindowAnchor) : 
         val activeOnIsland = activeWindow != null && activeAnchor == targetAnchor
 
         // Close behavior: if an active tool window exists on this island OR there are any visible on this island (even if focus is elsewhere), hide them all.
-        if (activeOnIsland || (activeWindow == null && visibleOnIsland.isNotEmpty())) {
+        if (activeOnIsland || visibleOnIsland.isNotEmpty()) {
             // Remember all currently visible tool windows on this island (so we can reopen them together)
             val idsToRemember = visibleOnIsland.map { it.id }
             if (idsToRemember.isNotEmpty()) {
