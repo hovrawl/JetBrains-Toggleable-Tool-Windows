@@ -1,6 +1,6 @@
 package com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive
 
-import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiSettings
+import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUISettings
 import com.intellij.ide.ui.UISettings
 import com.intellij.ide.ui.UISettingsListener
 import com.intellij.openapi.application.ApplicationManager
@@ -37,7 +37,7 @@ class ImmersiveTopBarManager : ProjectManagerListener {
 
     private fun onUISettingsChanged(uiSettings: UISettings) {
         // Only track manual changes when feature is enabled and we're not the ones changing it
-        if (isTrackingUISettingsChanges && CompactUiSettings.getInstance().state.enableAutoHideTopBar) {
+        if (isTrackingUISettingsChanges && CompactUISettings.getInstance().state.enableAutoHideTopBar) {
             // User manually changed toolbar/navbar settings while feature is active
             // Update our stored preferences
             SwingUtilities.invokeLater {
@@ -70,7 +70,7 @@ class ImmersiveTopBarManager : ProjectManagerListener {
         val delegate = ImmersiveTopBarFrameDelegate(frame, project, this)
         frameDelegates[frame] = delegate
         
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         if (settings.enableAutoHideTopBar) {
             delegate.enable()
         }
@@ -82,7 +82,7 @@ class ImmersiveTopBarManager : ProjectManagerListener {
 
     fun onSettingsChanged() {
         log("SETTINGS_CHANGED", "Settings changed, updating all frames")
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         
         SwingUtilities.invokeLater {
             if (settings.enableAutoHideTopBar) {
@@ -109,7 +109,7 @@ class ImmersiveTopBarManager : ProjectManagerListener {
 
     fun onSettingsUpdated() {
         log("SETTINGS_UPDATED", "Settings updated (not enabled/disabled), refreshing frames")
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         
         if (settings.enableAutoHideTopBar) {
             SwingUtilities.invokeLater {
@@ -131,7 +131,7 @@ class ImmersiveTopBarManager : ProjectManagerListener {
         
         val uiSettings = UISettings.getInstance()
         uiSettings.showMainToolbar = userPreferenceShowMainToolbar
-        if (CompactUiSettings.getInstance().state.hideNavigationBar) {
+        if (CompactUISettings.getInstance().state.hideNavigationBar) {
             uiSettings.showNavigationBar = userPreferenceShowNavigationBar
         }
         uiSettings.fireUISettingsChanged()
@@ -144,7 +144,7 @@ class ImmersiveTopBarManager : ProjectManagerListener {
     }
 
     fun log(tag: String, message: String) {
-        if (CompactUiSettings.getInstance().state.debugLogging) {
+        if (CompactUISettings.getInstance().state.debugLogging) {
             thisLogger().info("hCompactUi[IMMERSIVE][$tag]: $message")
         }
     }

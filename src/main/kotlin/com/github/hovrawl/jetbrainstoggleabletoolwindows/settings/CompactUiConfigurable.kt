@@ -70,7 +70,7 @@ class CompactUiConfigurable : Configurable {
     }
 
     override fun isModified(): Boolean {
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         return enableAutoHideCheckBox?.isSelected != settings.enableAutoHideTopBar ||
                 (revealZoneHeightSpinner?.value as? Int) != settings.revealZoneHeight ||
                 (hideDelaySpinner?.value as? Int) != settings.hideDelay ||
@@ -82,7 +82,7 @@ class CompactUiConfigurable : Configurable {
     }
 
     override fun apply() {
-        val settings = CompactUiSettings.getInstance()
+        val settings = CompactUISettings.getInstance()
         val oldEnabled = settings.state.enableAutoHideTopBar
         
         settings.state.enableAutoHideTopBar = enableAutoHideCheckBox?.isSelected ?: false
@@ -107,7 +107,7 @@ class CompactUiConfigurable : Configurable {
     }
 
     override fun reset() {
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         enableAutoHideCheckBox?.isSelected = settings.enableAutoHideTopBar
         revealZoneHeightSpinner?.value = settings.revealZoneHeight
         hideDelaySpinner?.value = settings.hideDelay

@@ -6,33 +6,31 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 
-@State(name = "CompactUiSettings", storages = [Storage("compact-ui.xml")])
+/**
+ * Facade settings service for the Compact UI feature (floating tool windows).
+ * This complements CompactUiSettings (immersive top bar) and resolves naming disparities
+ * between branches by providing the PascalCase `UI` variant used by existing code/tests.
+ */
+@State(name = "CompactUISettings", storages = [Storage("compact-ui-settings.xml")])
 @Service(Service.Level.APP)
-class CompactUiSettings : PersistentStateComponent<CompactUiSettings.State> {
+class CompactUISettings : PersistentStateComponent<CompactUISettingsState> {
 
-    data class State(
-        // Immersive Top Bar settings
-        var enableAutoHideTopBar: Boolean = false,
-        var revealZoneHeight: Int = 4,
-        var hideDelay: Int = 700,
-        var edgePadding: Int = 4,
-        var applySidesAndBottom: Boolean = true,
-        var hideNavigationBar: Boolean = true,
-        var enableAnimation: Boolean = false, // Future feature, disabled for now
-        
-        // Debug logging
-        var debugLogging: Boolean = false
-    )
+    private var state = CompactUISettingsState()
 
-    private var state = State()
+    override fun getState(): CompactUISettingsState = state
 
-    override fun getState(): State = state
-
-    override fun loadState(state: State) {
+    override fun loadState(state: CompactUISettingsState) {
         this.state = state
+        // Notify interested components that settings changed
+        ApplicationManager.getApplication()
+            .messageBus
+            .syncPublisher(CompactUISettingsListener.TOPIC)
+            .settingsChanged()
     }
 
     companion object {
-        fun getInstance(): CompactUiSettings = ApplicationManager.getApplication().getService(CompactUiSettings::class.java)
+        @JvmStatic
+        fun getInstance(): CompactUISettings =
+            ApplicationManager.getApplication().getService(CompactUISettings::class.java)
     }
 }

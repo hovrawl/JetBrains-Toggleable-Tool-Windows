@@ -1,6 +1,6 @@
 package com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive
 
-import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiSettings
+import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUISettings
 import com.intellij.ide.ui.UISettings
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
@@ -100,7 +100,7 @@ class ImmersiveTopBarFrameDelegate(
             return
         }
         
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         val height = settings.revealZoneHeight
         
         // Find glass pane
@@ -178,7 +178,7 @@ class ImmersiveTopBarFrameDelegate(
             return
         }
         
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         val padding = settings.edgePadding
         val applySides = settings.applySidesAndBottom
         
@@ -222,7 +222,7 @@ class ImmersiveTopBarFrameDelegate(
         val uiSettings = UISettings.getInstance()
         uiSettings.showMainToolbar = true
         
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         if (settings.hideNavigationBar) {
             uiSettings.showNavigationBar = true
         }
@@ -239,7 +239,7 @@ class ImmersiveTopBarFrameDelegate(
             val uiSettings = UISettings.getInstance()
             uiSettings.showMainToolbar = false
             
-            val settings = CompactUiSettings.getInstance().state
+            val settings = CompactUISettings.getInstance().state
             if (settings.hideNavigationBar) {
                 uiSettings.showNavigationBar = false
             }
@@ -250,7 +250,7 @@ class ImmersiveTopBarFrameDelegate(
             val uiSettings = UISettings.getInstance()
             uiSettings.showMainToolbar = false
             
-            val settings = CompactUiSettings.getInstance().state
+            val settings = CompactUISettings.getInstance().state
             if (settings.hideNavigationBar) {
                 uiSettings.showNavigationBar = false
             }
@@ -265,7 +265,7 @@ class ImmersiveTopBarFrameDelegate(
     private fun scheduleHide() {
         cancelHideTimer()
         
-        val settings = CompactUiSettings.getInstance().state
+        val settings = CompactUISettings.getInstance().state
         val delay = settings.hideDelay
         
         if (hideAlarm == null) {

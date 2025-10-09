@@ -31,8 +31,8 @@ class CompactUIController(private val project: Project) : Disposable {
     )
     
     private val windowStates = mutableMapOf<String, WindowState>()
-    private val showRequests = mutableMapOf<String, Alarm.Request>()
-    private val hideRequests = mutableMapOf<String, Alarm.Request>()
+    private val showRequests = mutableMapOf<String, Runnable>()
+    private val hideRequests = mutableMapOf<String, Runnable>()
     private val mouseListeners = mutableMapOf<Component, MouseAdapter>()
 
     init {
@@ -114,11 +114,9 @@ class CompactUIController(private val project: Project) : Disposable {
         }
 
         // Schedule show after hover delay
-        val request = alarm.addRequest({
-            performShow(id)
-        }, settings.hoverActivationDelayMs)
-        
-        showRequests[id] = request
+        val runnable = Runnable { performShow(id) }
+        alarm.addRequest(runnable, settings.hoverActivationDelayMs)
+        showRequests[id] = runnable
     }
 
     fun requestHide(id: String, reason: String) {
@@ -142,11 +140,9 @@ class CompactUIController(private val project: Project) : Disposable {
         }
 
         // Schedule hide after auto-hide delay
-        val request = alarm.addRequest({
-            performHide(id)
-        }, settings.autoHideDelayMs)
-        
-        hideRequests[id] = request
+        val runnable = Runnable { performHide(id) }
+        alarm.addRequest(runnable, settings.autoHideDelayMs)
+        hideRequests[id] = runnable
     }
 
     fun forceHideAll() {
