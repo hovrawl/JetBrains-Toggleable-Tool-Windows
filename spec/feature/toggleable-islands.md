@@ -4,6 +4,17 @@ This spec documents the Toggleable Islands feature: three actions that let you q
 
 The behavior is designed to be fast, predictable, and keyboard-friendly, while coexisting cleanly with the Compact UI mode.
 
+## Current Status (October 2025)
+
+- Implemented and available
+  - Actions exist and are registered in `plugin.xml` with correct IDs and classes
+  - Core logic implemented in `ToggleIslandAction` with per-island subclasses
+  - Per-project persistence implemented via `RememberedToolWindowsService` with multi-ID support and legacy migration
+  - Compact UI integration present: when enabled, actions delegate to `CompactUIController` show/hide APIs
+  - Fallback behavior implemented to open the first available tool window on an island when none are remembered
+
+Summary: Toggleable Islands is fully functional and integrated with the rest of the plugin.
+
 ## What's New
 
 ### Core Functionality
@@ -25,7 +36,7 @@ The behavior is designed to be fast, predictable, and keyboard-friendly, while c
   - Showing uses `controller.requestShow(id, "toggle_action")` for the primary remembered window
 - When Compact UI is disabled, the toggling logic uses the normal Tool Window API (`show`, `hide`, `activate`).
 
-### Per‑Project Memory
+### Per–Project Memory
 
 - Last-remembered tool windows are stored per project via a `PersistentStateComponent` with multi-ID support per island, including migration from legacy single-ID fields.
 
@@ -144,4 +155,3 @@ Registered in `src/main/resources/META-INF/plugin.xml`:
 - Potential per-island preferences (e.g., prefer specific default window if none remembered)
 - Optional setting to remember only the active tool window rather than all visible on the island
 - Additional tests for split panes and combined tool window scenarios
-

@@ -17,35 +17,11 @@
 - [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
 - [ ] Configure the [CODECOV_TOKEN](https://docs.codecov.com/docs/quick-start) secret for automated test coverage reports on PRs
 
-## Plugin-specific Implementation Tasks: Toggleable Tool Windows
+A productivity plugin that makes JetBrains tool windows feel fast and minimal:
+- Toggleable Islands: three actions to hide/reopen the last set of tool windows per island (left, right, bottom)
+- Compact UI Mode: optional floating, hover-timed tool windows that auto-hide after a delay
+- Immersive Top Bar: optional auto-hide for the main toolbar/navigation bar with a slim reveal zone and edge padding
 
-- [ ] Define per-project state storage for last-remembered tool window IDs per island (left/right/bottom):
-  - [ ] Create a ProjectService implementing PersistentStateComponent with fields like lastLeftId, lastRightId, lastBottomId.
-  - [ ] Validate/clear IDs on project open; ensure they correspond to existing tool windows.
-- [ ] Implement core toggle logic shared across islands:
-  - [ ] Create an abstract ToggleIslandAction (AnAction) that determines current active tool window and its island (via ToolWindowManager.getActiveToolWindowId and ToolWindow.anchor).
-  - [ ] If the active tool window is on this action’s island: hide it (toolWindow.hide(null)) and remember its ID in the ProjectService.
-  - [ ] If none is active on this island: fetch remembered ID from ProjectService; if valid, activate/show it (toolWindow.activate(null, true) or show(null)).
-  - [ ] Update remembered ID when a different tool window on the same island becomes active before hiding.
-  - [ ] Handle floating/detached windows as belonging to their original island.
-- [ ] Provide concrete actions for each island:
-  - [ ] ToggleLeftIslandToolWindow
-  - [ ] ToggleRightIslandToolWindow
-  - [ ] ToggleBottomIslandToolWindow
-- [ ] Register actions in plugin.xml with stable action IDs and presentation:
-  - [ ] Add three <action> entries with text/description and group them appropriately for discoverability.
-  - [ ] Optionally create a Keymap group to suggest bindings.
-- [ ] Edge cases and robustness:
-  - [ ] If remembered ID is invalid or tool window is unavailable (ToolWindowManager.getToolWindow(id) == null), skip safely.
-  - [ ] When first invoked with no remembered ID and no active window on that island, do nothing.
-  - [ ] Resolve focus ambiguities by relying on ToolWindowManager.getActiveToolWindowId; fall back to PlatformDataKeys.TOOL_WINDOW.
-- [ ] Tests (optional but recommended):
-  - [ ] Add BasePlatformTestCase tests to simulate action execution and assert remembered IDs and visibility changes where feasible.
-- [ ] Documentation and usage:
-  - [ ] Update README and plugin description to clearly state behavior and provide suggested keybindings (e.g., Alt+1/Alt+2/Alt+3 if not conflicting).
-  - [ ] Add a short “How to bind keys” section: Settings/Preferences > Keymap, search by action name.
-- [ ] Manual verification:
-  - [ ] runIde and verify toggling for Project/Structure (left), Commit/TODO (right), Run/Debug/Terminal (bottom) behaves as expected.
 
 <!-- Plugin description -->
 Toggleable Islands adds three actions that let you quickly hide and re‑open the last active tool window on each island (left, right, bottom).
@@ -63,94 +39,60 @@ Notes:
 
 ## Compact UI Mode
 
-The plugin offers a **Compact UI** mode that enables tool windows to appear as transient floating overlays when you hover over their stripe icons, and automatically hide when you move the mouse away. This provides a more streamlined workspace while keeping quick access to tool windows.
+The plugin offers a Compact UI mode that enables tool windows to appear as transient floating overlays when you show them via the toggle actions, and automatically hide when you move the mouse away.
 
-### Features
+Features
+- Hover to Show (via actions): windows appear after a configurable delay when requested
+- Auto-Hide: windows disappear after a configurable delay when you move the mouse away
+- Floating Presentation: windows appear as overlays that don't affect editor layout
+- Seamless Integration: works alongside the island toggle actions
 
-- **Hover to Show**: Tool windows appear automatically when you hover over their icons in the tool window stripes (left, right, bottom)
-- **Auto-Hide**: Windows disappear after a configurable delay when you move the mouse away
-- **Floating Presentation**: Windows appear as floating overlays that don't affect your editor layout
-- **Seamless Integration**: Works alongside the existing island toggle actions
+Settings (Settings/Preferences > Tools > Compact UI)
+- Enable Compact UI
+- Hover activation delay (ms)
+- Auto-hide delay (ms)
+- Only hide when editor refocuses
+- Suppress floating for pinned tool windows
+- Enable debug logging
 
-### Settings
+## Immersive Top Bar
 
-Access Compact UI settings via **Settings/Preferences > Tools > Compact UI**:
+An optional auto-hide for the IDE's main toolbar and navigation bar with a minimalist chrome effect.
 
-- **Enable Compact UI**: Toggle the feature on/off (default: off)
-- **Hover activation delay (ms)**: How long to wait before showing a window on hover (default: 150ms)
-- **Auto-hide delay (ms)**: How long to wait before hiding a window after mouse exit (default: 500ms)
-- **Only hide when editor refocuses**: Additional condition for auto-hiding (default: enabled)
-- **Suppress floating for pinned tool windows**: Whether to exclude pinned windows from Compact UI behavior (default: enabled)
-- **Enable debug logging**: Show detailed logs for troubleshooting (default: disabled)
+How it works
+- When enabled, the toolbar (and optionally the navigation bar) is hidden by default
+- Move the mouse to the top edge (reveal zone) to show it temporarily
+- It auto-hides after a configurable delay when you move away
+- Optional edge padding can be applied for a cleaner look
 
-### How It Works with Toggle Actions
+Settings (same Compact UI page)
+- Enable Auto-hide Top Bar
+- Reveal zone height
+- Hide delay
+- Edge padding (+ apply to sides and bottom)
+- Hide navigation bar too
+- Enable debug logging
 
-When Compact UI is enabled:
-- The toggle actions (Alt+1/2/3 or your custom bindings) still work to show/hide tool windows
-- Showing a window uses the hover delay and floating presentation
-- Hiding windows triggers the auto-hide mechanism
-- When you disable Compact UI, all windows are restored to their original presentation and the normal toggle behavior resumes
-
-### Manual Verification
-
-To verify Compact UI is working correctly:
-1. Enable Compact UI in settings
-2. Hover over a tool window icon - it should appear after the activation delay
-3. Move mouse away - it should hide after the auto-hide delay
-4. Toggle the feature off - windows should restore to normal behavior instantly
-5. If suppressWhenPinned is enabled, pinned windows should be ignored
-
-### Immersive Top Bar
-
-The Immersive Top Bar feature provides an optional auto-hide capability for the IDE's main toolbar and navigation bar, creating a more minimal, distraction-free workspace.
-
-**How it works:**
-- When enabled, the main toolbar (and optionally the navigation bar) are hidden by default.
-- Move your mouse to the top edge of the IDE window (reveal zone) to temporarily show the toolbar.
-- The toolbar automatically hides again after a configurable delay when you move your mouse away.
-- Optional edge padding can be applied around the IDE content for a cleaner, modern appearance similar to Zen Browser.
-
-**Configuration:**
-Access settings via <kbd>Settings/Preferences</kbd> > <kbd>Tools</kbd> > <kbd>Compact UI</kbd>:
-- **Enable Auto-hide Top Bar**: Master toggle for the feature
-- **Reveal zone height**: Height in pixels of the mouse-sensitive area at the top (default: 4px)
-- **Hide delay**: Milliseconds to wait before hiding toolbar after mouse leaves (default: 700ms)
-- **Edge padding**: Pixels of padding around IDE content (default: 4px)
-- **Apply padding to sides and bottom**: Whether to apply padding on all sides or just top (default: enabled)
-- **Hide navigation bar too**: Whether to also hide the navigation bar (default: enabled)
-- **Enable debug logging**: Log detailed events for troubleshooting (default: disabled)
-
-**Notes:**
-- Your original toolbar/navigation bar visibility preferences are preserved and restored when you disable the feature.
-- The feature respects fullscreen and presentation modes by temporarily suspending padding.
-- Works seamlessly with the existing Toggleable Islands feature.
-
-**Testing:**
-For manual testing instructions, see [TESTING.md](TESTING.md).
+For manual testing tips, see TESTING.md.
 <!-- Plugin description end -->
 
 ## Installation
 
 - Using the IDE built-in plugin system:
   
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "JetBrains-Toggleable-Tool-Windows"</kbd> >
-  <kbd>Install</kbd>
+  Settings/Preferences > Plugins > Marketplace > Search for "JetBrains-Toggleable-Tool-Windows" > Install
   
 - Using JetBrains Marketplace:
 
-  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID) and install it by clicking the <kbd>Install to ...</kbd> button in case your IDE is running.
+  Go to JetBrains Marketplace and install it by clicking the Install to ... button in case your IDE is running.
 
-  You can also download the [latest release](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID/versions) from JetBrains Marketplace and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+  You can also download the latest release from JetBrains Marketplace and install it manually using
+  Settings/Preferences > Plugins > ⚙️ > Install plugin from disk...
 
 - Manually:
 
-  Download the [latest release](https://github.com/hovrawl/JetBrains-Toggleable-Tool-Windows/releases/latest) and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
-
+  Download the latest release from GitHub Releases and install it manually using
+  Settings/Preferences > Plugins > ⚙️ > Install plugin from disk...
 
 ---
-Plugin based on the [IntelliJ Platform Plugin Template][template].
-
-[template]: https://github.com/JetBrains/intellij-platform-plugin-template
-[docs:plugin-description]: https://plugins.jetbrains.com/docs/intellij/plugin-user-experience.html#plugin-description-and-presentation
+Plugin based on the IntelliJ Platform Plugin Template.

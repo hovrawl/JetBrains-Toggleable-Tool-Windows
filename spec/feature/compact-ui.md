@@ -2,6 +2,20 @@
 
 This PR implements the **Compact UI** feature that enables tool windows to appear as transient floating overlays with automatic hide functionality. This provides users with a more streamlined workspace while maintaining quick access to tool windows through the existing toggle actions.
 
+## Current Status (October 2025)
+
+- Implemented
+  - Floating presentation via ToolWindowType.FLOATING with restore on hide/disable
+  - Auto-hide with configurable delay (controller schedules hide on mouse exit)
+  - Hover/show delay honored when a show is requested (e.g., via toggle actions)
+  - Settings persistence and UI (Enable, Hover activation delay, Auto-hide delay, Only hide when editor refocuses [present but not enforced], Suppress when pinned, Debug logging)
+  - Seamless integration with Toggleable Islands (toggle actions delegate to the controller when enabled)
+- Not yet implemented / partial
+  - Stripe icon hover to trigger show: infrastructure class exists (StripeHoverDetector) but the actual stripe button lookup is a placeholder; no hover-based activation is currently wired
+  - "Only hide when editor refocuses" policy is not enforced in controller logic yet (hide is based on mouse exit and timer)
+
+Summary: Compact UI works when triggered via the toggle actions and provides floating, timed auto-hide behavior. Passive hover-from-stripe activation is not active yet.
+
 ## What's New
 
 ### Compact UI Mode
@@ -150,210 +164,6 @@ This implementation delivers a complete, production-ready Compact UI feature tha
 > #### I tried to connect to the following addresses, but was blocked by firewall rules:
 >
 > - `cache-redirector.jetbrains.com`
-    >   - Triggering command: `/usr/lib/jvm/temurin-17-jdk-amd64/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:&#43;HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country -Duser.language=en -Duser.variant -cp /home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/gradle-daemon-main-9.0.0.jar -javaagent:/home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/agents/gradle-instrumentation-agent-9.0.0.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.0.0` (dns block)
+    >   - Triggering command: `/usr/lib/jvm/temurin-17-jdk-amd64/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country -Duser.language=en -Duser.variant -cp /home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/gradle-daemon-main-9.0.0.jar -javaagent:/home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/agents/gradle-instrumentation-agent-9.0.0.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.0.0` (dns block)
 > - `download.jetbrains.com`
-    >   - Triggering command: `/usr/lib/jvm/temurin-17-jdk-amd64/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:&#43;HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country -Duser.language=en -Duser.variant -cp /home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/gradle-daemon-main-9.0.0.jar -javaagent:/home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/agents/gradle-instrumentation-agent-9.0.0.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.0.0` (dns block)
->
-> If you need me to access, download, or install something from one of these locations, you can either:
->
-> - Configure [Actions setup steps](https://gh.io/copilot/actions-setup-steps) to set up my environment, which run before the firewall is enabled
-> - Add the appropriate URLs or hosts to the custom allowlist in this repository's [Copilot coding agent settings](https://github.com/hovrawl/JetBrains-Toggleable-Tool-Windows/settings/copilot/coding_agent) (admins only)
->
-> </details>
-
-<!-- START COPILOT CODING AGENT SUFFIX -->
-
-
-
-<details>
-
-<summary>Original prompt</summary>
-
-Implement the Compact UI feature for floating, hover-activated tool windows.
-
-Goal
-Add a global "Compact UI" mode to the plugin that enables tool windows to appear in a transient floating overlay when activated by stripe (island) hover, and auto-hide after the mouse leaves, without breaking existing island toggle actions.
-
-Scope (Iteration 1)
-NO per-tool overrides (future extension point only). Applies to all eligible tool windows.
-
-Functional Requirements
-1. Settings / Persistence
-    - Create a PersistentStateComponent (application-level or project-level; choose project-level if behavior should differ per project, else application-level — use application-level for now unless a dependency on project context is needed) storing:
-        - enabled: Boolean (default false)
-        - hoverActivationDelayMs: Int (default 150)
-        - autoHideDelayMs: Int (default 500)
-        - onlyWhenEditorFocused: Boolean (default true)
-        - suppressWhenPinned: Boolean (default true)
-        - debugLogging: Boolean (default false)
-    - Provide Kotlin data class style state + service accessor: CompactUISettings / CompactUISettingsState.
-    - Expose a UI via SearchableConfigurable titled "Compact UI" with controls:
-      [ ] Enable Compact UI
-      Hover activation delay (ms) [spinner]
-      Auto-hide delay (ms) [spinner]
-      [ ] Only hide when editor refocuses
-      [ ] Suppress floating for pinned tool windows
-      [ ] Enable debug logging (advanced section)
-    - Apply changes immediately (onApply triggers controller to refresh timers/behavior).
-
-2. Controller / Service
-    - New ProjectService: CompactUIController.
-    - Responsibilities:
-        - Listen for tool window registration/unregistration (ToolWindowManagerListener) to maintain eligible set.
-        - Install mouse listeners on tool window stripes (left/right/bottom) to detect icon hover.
-            * Because stripe components are not public API, use existing WindowManager/ToolWindowManager APIs to obtain stripe buttons (e.g., iterate toolWindowIds, get toolWindow.component, or query UI hierarchy). If necessary, fallback to using AnAction events (but prefer direct component hover detection). If accessing internal classes, guard with try/catch and log only when debugLogging is true.
-        - Manage show/hide timers:
-            * On stripe icon enter for eligible tool window: schedule show after hoverActivationDelayMs (cancel if leave before firing).
-            * While mouse over stripe icon or floating window: cancel any hide timer.
-            * On mouse exit from both: schedule hide after autoHideDelayMs.
-        - Provide API:
-          requestShow(id: String, trigger: Trigger)
-          requestHide(id: String, reason: Reason)
-          forceHideAll()
-        - Keep internal state map for currently floating windows (id -> originalType, originalAnchor if modifying them).
-    - Use Alarm (Swing thread) or Kotlin coroutines with Swing EDT dispatch. If introducing coroutines, add dependency and ensure runInEdt for UI ops.
-
-3. Floating Presentation Strategy
-    - For each window shown in Compact UI mode:
-        * If not already visible: call toolWindow.show(null) but set type to FLOATING (toolWindow.setType(ToolWindowType.FLOATING, null)).
-        * Store original type (probably DOCKED) in state map.
-        * Optionally adjust auto-hide flag if pinned and suppressWhenPinned is true (skip floating logic entirely — just return).
-    - On hide: revert type to original if changed, then hide (toolWindow.hide(null)).
-    - On disabling Compact UI globally: iterate any active floating windows and restore them to original type (leaving visibility consistent—hide them to return to prior collapsed state).
-
-4. Integration With Existing Toggle Actions
-    - Modify ToggleIslandAction logic:
-        * Before performing current show/hide logic, check if Compact UI enabled.
-        * If enabling a set of tool windows: use controller.requestShow(rememberedId or first found) instead of direct activate/show.
-        * If hiding: call controller.forceHideAll() (or targeted hide) for that island.
-        * Preserve the existing remembered IDs behavior untouched when Compact UI disabled.
-
-5. Eligibility Rules
-    - A tool window is eligible if:
-        * Compact UI enabled.
-        * Not pinned (when suppressWhenPinned on).
-        * toolWindow.isAvailable is true.
-    - For iteration 1, no per-tool inclusion/exclusion.
-
-6. Focus / Auto-hide Policy
-    - If onlyWhenEditorFocused is true, start auto-hide countdown only after focus owner becomes an editor component OR mouse enters editor area.
-    - If tool window content requests focus (e.g., user typing in it), auto-hide should not trigger until user leaves (mouse exit + focus shift) — simplest approach: always require mouse exit for scheduling hide; then on schedule, if focus is still inside the tool window component hierarchy, defer.
-
-7. Logging (debug mode)
-    - Use Logger.getInstance(CompactUIController::class.java).
-    - Emit events: SHOW_REQUEST(id, trigger), SHOW_COMMIT(id), HIDE_SCHEDULED(id, reason, delay), HIDE_CANCELL...
-
-</details>
-*This pull request was created as a result of the following prompt from Copilot chat.*
-> Implement the Compact UI feature for floating, hover-activated tool windows.
-> 
-> Goal
-> Add a global "Compact UI" mode to the plugin that enables tool windows to appear in a transient floating overlay when activated by stripe (island) hover, and auto-hide after the mouse leaves, without breaking existing island toggle actions.
-> 
-> Scope (Iteration 1)
-> NO per-tool overrides (future extension point only). Applies to all eligible tool windows.
-> 
-> Functional Requirements
-> 1. Settings / Persistence
->    - Create a PersistentStateComponent (application-level or project-level; choose project-level if behavior should differ per project, else application-level — use application-level for now unless a dependency on project context is needed) storing:
->      - enabled: Boolean (default false)
->      - hoverActivationDelayMs: Int (default 150)
->      - autoHideDelayMs: Int (default 500)
->      - onlyWhenEditorFocused: Boolean (default true)
->      - suppressWhenPinned: Boolean (default true)
->      - debugLogging: Boolean (default false)
->    - Provide Kotlin data class style state + service accessor: CompactUISettings / CompactUISettingsState.
->    - Expose a UI via SearchableConfigurable titled "Compact UI" with controls:
->      [ ] Enable Compact UI
->      Hover activation delay (ms) [spinner]
->      Auto-hide delay (ms) [spinner]
->      [ ] Only hide when editor refocuses
->      [ ] Suppress floating for pinned tool windows
->      [ ] Enable debug logging (advanced section)
->    - Apply changes immediately (onApply triggers controller to refresh timers/behavior).
-> 
-> 2. Controller / Service
->    - New ProjectService: CompactUIController.
->    - Responsibilities:
->      - Listen for tool window registration/unregistration (ToolWindowManagerListener) to maintain eligible set.
->      - Install mouse listeners on tool window stripes (left/right/bottom) to detect icon hover.
->        * Because stripe components are not public API, use existing WindowManager/ToolWindowManager APIs to obtain stripe buttons (e.g., iterate toolWindowIds, get toolWindow.component, or query UI hierarchy). If necessary, fallback to using AnAction events (but prefer direct component hover detection). If accessing internal classes, guard with try/catch and log only when debugLogging is true.
->      - Manage show/hide timers:
->        * On stripe icon enter for eligible tool window: schedule show after hoverActivationDelayMs (cancel if leave before firing).
->        * While mouse over stripe icon or floating window: cancel any hide timer.
->        * On mouse exit from both: schedule hide after autoHideDelayMs.
->      - Provide API:
->        requestShow(id: String, trigger: Trigger)
->        requestHide(id: String, reason: Reason)
->        forceHideAll()
->      - Keep internal state map for currently floating windows (id -> originalType, originalAnchor if modifying them).
->    - Use Alarm (Swing thread) or Kotlin coroutines with Swing EDT dispatch. If introducing coroutines, add dependency and ensure runInEdt for UI ops.
-> 
-> 3. Floating Presentation Strategy
->    - For each window shown in Compact UI mode:
->      * If not already visible: call toolWindow.show(null) but set type to FLOATING (toolWindow.setType(ToolWindowType.FLOATING, null)).
->      * Store original type (probably DOCKED) in state map.
->      * Optionally adjust auto-hide flag if pinned and suppressWhenPinned is true (skip floating logic entirely — just return).
->    - On hide: revert type to original if changed, then hide (toolWindow.hide(null)).
->    - On disabling Compact UI globally: iterate any active floating windows and restore them to original type (leaving visibility consistent—hide them to return to prior collapsed state).
-> 
-> 4. Integration With Existing Toggle Actions
->    - Modify ToggleIslandAction logic:
->      * Before performing current show/hide logic, check if Compact UI enabled.
->      * If enabling a set of tool windows: use controller.requestShow(rememberedId or first found) instead of direct activate/show.
->      * If hiding: call controller.forceHideAll() (or targeted hide) for that island.
->      * Preserve the existing remembered IDs behavior untouched when Compact UI disabled.
-> 
-> 5. Eligibility Rules
->    - A tool window is eligible if:
->      * Compact UI enabled.
->      * Not pinned (when suppressWhenPinned on).
->      * toolWindow.isAvailable is true.
->    - For iteration 1, no per-tool inclusion/exclusion.
-> 
-> 6. Focus / Auto-hide Policy
->    - If onlyWhenEditorFocused is true, start auto-hide countdown only after focus owner becomes an editor component OR mouse enters editor area.
->    - If tool window content requests focus (e.g., user typing in it), auto-hide should not trigger until user leaves (mouse exit + focus shift) — simplest approach: always require mouse exit for scheduling hide; then on schedule, if focus is still inside the tool window component hierarchy, defer.
-> 
-> 7. Logging (debug mode)
->    - Use Logger.getInstance(CompactUIController::class.java).
->    - Emit events: SHOW_REQUEST(id, trigger), SHOW_COMMIT(id), HIDE_SCHEDULED(id, reason, delay), HIDE_CANCELLED(id), HIDE_COMMIT(id), SUPPRESSED_PINNED(id), DISABLED_GLOBAL.
-> 
-> 8. Cleanup / Disposal
->    - On project closing / controller dispose: cancel all timers, restore any modified tool window types, clear internal maps.
->    - Ensure no listener leaks (remove mouse listeners if referencing stripe components).
-> 
-> 9. README Documentation
->    - Add a new section: "Compact UI Mode" describing feature, settings, default delays, and how it coexists with existing island toggle actions.
->    - Add placeholders for potential animated GIF (not required to supply media now).
-> 
-> 10. Testing / Manual Verification Notes (include in PR description):
->    - Hover shows window after activation delay.
->    - Leaving collapses after auto-hide delay.
->    - Toggling feature off returns normal behavior instantly.
->    - Pinned windows ignored when suppressWhenPinned.
->    - Action toggles still hide/show instantly.
-> 
-> Implementation Steps (Commit Plan)
-> 1. Add settings state + service + configurable UI.
-> 2. Add controller skeleton with registration & logging.
-> 3. Implement hover detection + timers + floating show/hide.
-> 4. Integrate with ToggleIslandAction.
-> 5. Add README section + minor documentation.
-> 6. Final polish: restore types on disable/dispose, edge cases, logging.
-> 
-> Non-Goals (Iteration 1)
-> - Per-tool overrides (delays, opt-out) — reserved for future.
-> - Complex focus heuristics beyond basic mouse+focus checks.
-> - Multi-monitor location adjustments or repositioning beyond default floating behavior.
-> 
-> Acceptance Criteria
-> - All settings persisted and applied at runtime without IDE restart.
-> - No exceptions in log under normal usage.
-> - Existing toggle actions continue to function in both modes.
-> - Disabling Compact UI reverts any floating tool windows seamlessly.
-> 
-> Please implement in Kotlin and follow existing package structure (e.g., place settings under a logical package: settings; controller under services or controller).
-
-<!-- START COPILOT CODING AGENT TIPS -->
----
+    >   - Triggering command: `/usr/lib/jvm/temurin-17-jdk-amd64/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country -Duser.language=en -Duser.variant -cp /home/REDACTED/.gradle/wrapper/dists/gradle-9.0.0-bin/d6wjpkvcgsg3oed0qlfss3wgl/gradle-9.0.0/lib/gradle-daemon-main-9.0.0.jar -javaagent:/home

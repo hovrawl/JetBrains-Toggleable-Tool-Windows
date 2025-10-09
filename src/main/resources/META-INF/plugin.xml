@@ -11,7 +11,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationConfigurable
                 parentId="tools"
-                instance="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiConfigurable"
+                instance="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUIConfigurable"
                 id="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiConfigurable"
                 displayName="Compact UI"/>
     </extensions>
