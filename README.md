@@ -99,6 +99,34 @@ To verify Compact UI is working correctly:
 3. Move mouse away - it should hide after the auto-hide delay
 4. Toggle the feature off - windows should restore to normal behavior instantly
 5. If suppressWhenPinned is enabled, pinned windows should be ignored
+
+### Immersive Top Bar
+
+The Immersive Top Bar feature provides an optional auto-hide capability for the IDE's main toolbar and navigation bar, creating a more minimal, distraction-free workspace.
+
+**How it works:**
+- When enabled, the main toolbar (and optionally the navigation bar) are hidden by default.
+- Move your mouse to the top edge of the IDE window (reveal zone) to temporarily show the toolbar.
+- The toolbar automatically hides again after a configurable delay when you move your mouse away.
+- Optional edge padding can be applied around the IDE content for a cleaner, modern appearance similar to Zen Browser.
+
+**Configuration:**
+Access settings via <kbd>Settings/Preferences</kbd> > <kbd>Tools</kbd> > <kbd>Compact UI</kbd>:
+- **Enable Auto-hide Top Bar**: Master toggle for the feature
+- **Reveal zone height**: Height in pixels of the mouse-sensitive area at the top (default: 4px)
+- **Hide delay**: Milliseconds to wait before hiding toolbar after mouse leaves (default: 700ms)
+- **Edge padding**: Pixels of padding around IDE content (default: 4px)
+- **Apply padding to sides and bottom**: Whether to apply padding on all sides or just top (default: enabled)
+- **Hide navigation bar too**: Whether to also hide the navigation bar (default: enabled)
+- **Enable debug logging**: Log detailed events for troubleshooting (default: disabled)
+
+**Notes:**
+- Your original toolbar/navigation bar visibility preferences are preserved and restored when you disable the feature.
+- The feature respects fullscreen and presentation modes by temporarily suspending padding.
+- Works seamlessly with the existing Toggleable Islands feature.
+
+**Testing:**
+For manual testing instructions, see [TESTING.md](TESTING.md).
 <!-- Plugin description end -->
 
 ## Installation

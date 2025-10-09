@@ -1,3 +1,5 @@
+<!-- Keep a Changelog guide -> https://keepachangelog.com -->
+
 # JetBrains-Toggleable-Tool-Windows Changelog
 
 ## [Unreleased]
