@@ -35,6 +35,8 @@ class ImmersiveTopBarFrameDelegate(
         ApplicationManager.getApplication().invokeLater {
             if (!isInFullscreenOrPresentationMode()) {
                 createRevealZone()
+                // Ensure previous padding is removed before applying again
+                removeEdgePadding()
                 applyEdgePadding()
             }
             hideToolbars()

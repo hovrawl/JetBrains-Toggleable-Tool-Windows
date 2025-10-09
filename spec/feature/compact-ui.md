@@ -7,14 +7,15 @@ This PR implements the **Compact UI** feature that enables tool windows to appea
 - Implemented
   - Floating presentation via ToolWindowType.FLOATING with restore on hide/disable
   - Auto-hide with configurable delay (controller schedules hide on mouse exit)
-  - Hover/show delay honored when a show is requested (e.g., via toggle actions)
-  - Settings persistence and UI (Enable, Hover activation delay, Auto-hide delay, Only hide when editor refocuses [present but not enforced], Suppress when pinned, Debug logging)
+  - Hover/show delay honored when a show is requested (from stripe hover or toggle actions)
+  - Settings persistence and UI (Enable, Hover activation delay, Auto-hide delay, Only hide when editor refocuses, Suppress when pinned, Debug logging)
+  - Stripe icon hover activation (best-effort UI scan) triggers Compact UI show
+  - "Only hide when editor refocuses" policy enforced: hides defer until editor regains focus
   - Seamless integration with Toggleable Islands (toggle actions delegate to the controller when enabled)
-- Not yet implemented / partial
-  - Stripe icon hover to trigger show: infrastructure class exists (StripeHoverDetector) but the actual stripe button lookup is a placeholder; no hover-based activation is currently wired
-  - "Only hide when editor refocuses" policy is not enforced in controller logic yet (hide is based on mouse exit and timer)
+- Notes
+  - Stripe hover uses a best-effort scan of the frame hierarchy to locate stripe buttons (no internal API dependency). It may vary slightly across IDE versions/skins but is guarded by debug logs.
 
-Summary: Compact UI works when triggered via the toggle actions and provides floating, timed auto-hide behavior. Passive hover-from-stripe activation is not active yet.
+Summary: Compact UI is fully usable from both stripe hover and toggle actions, with pinned suppression and editor-refocus policy supported.
 
 ## What's New
 

@@ -1,20 +1,19 @@
 package com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive
 
 import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUISettings
+import com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUISettingsListener
 import com.intellij.ide.ui.UISettings
 import com.intellij.ide.ui.UISettingsListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.openapi.wm.WindowManager
 import java.awt.Window
 import javax.swing.SwingUtilities
 
 @Service(Service.Level.APP)
-class ImmersiveTopBarManager : ProjectManagerListener {
+class ImmersiveTopBarManager {
 
     private val frameDelegates = mutableMapOf<Window, ImmersiveTopBarFrameDelegate>()
     private var originalShowMainToolbar: Boolean? = null
@@ -25,14 +24,28 @@ class ImmersiveTopBarManager : ProjectManagerListener {
 
     init {
         log("INIT", "ImmersiveTopBarManager initialized")
-        ApplicationManager.getApplication().messageBus.connect()
-            .subscribe(ProjectManager.TOPIC, this)
-        
+
         // Subscribe to UISettings changes to track user manual changes
         ApplicationManager.getApplication().messageBus.connect()
             .subscribe(UISettingsListener.TOPIC, UISettingsListener { uiSettings ->
                 onUISettingsChanged(uiSettings)
             })
+
+        // Subscribe to Compact UI settings changes to enable/disable immersive behavior
+        ApplicationManager.getApplication().messageBus.connect()
+            .subscribe(CompactUISettingsListener.TOPIC, object : CompactUISettingsListener {
+                override fun settingsChanged() {
+                    onSettingsChanged()
+                }
+            })
+    }
+
+    fun initializeForProject(project: Project) {
+        log("INIT_FRAME", "Initialize for project: ${project.name}")
+        SwingUtilities.invokeLater {
+            val frame = WindowManager.getInstance().getFrame(project) ?: return@invokeLater
+            initializeFrameDelegate(frame, project)
+        }
     }
 
     private fun onUISettingsChanged(uiSettings: UISettings) {
@@ -45,22 +58,6 @@ class ImmersiveTopBarManager : ProjectManagerListener {
                 userPreferenceShowNavigationBar = uiSettings.showNavigationBar
                 log("USER_PREF_UPDATED", "User preferences updated via manual change: toolbar=$userPreferenceShowMainToolbar, navbar=$userPreferenceShowNavigationBar")
             }
-        }
-    }
-
-    override fun projectOpened(project: Project) {
-        log("INIT_FRAME", "Project opened: ${project.name}")
-        SwingUtilities.invokeLater {
-            val frame = WindowManager.getInstance().getFrame(project) ?: return@invokeLater
-            initializeFrameDelegate(frame, project)
-        }
-    }
-
-    override fun projectClosed(project: Project) {
-        log("INIT_FRAME", "Project closed: ${project.name}")
-        SwingUtilities.invokeLater {
-            val frame = WindowManager.getInstance().getFrame(project) ?: return@invokeLater
-            disposeFrameDelegate(frame)
         }
     }
 
@@ -105,25 +102,6 @@ class ImmersiveTopBarManager : ProjectManagerListener {
                 restoreOriginalState()
             }
         }
-    }
-
-    fun onSettingsUpdated() {
-        log("SETTINGS_UPDATED", "Settings updated (not enabled/disabled), refreshing frames")
-        val settings = CompactUISettings.getInstance().state
-        
-        if (settings.enableAutoHideTopBar) {
-            SwingUtilities.invokeLater {
-                // Refresh all frame delegates to pick up new settings
-                frameDelegates.values.forEach { it.refresh() }
-            }
-        }
-    }
-
-    fun updateUserPreferences() {
-        val uiSettings = UISettings.getInstance()
-        userPreferenceShowMainToolbar = uiSettings.showMainToolbar
-        userPreferenceShowNavigationBar = uiSettings.showNavigationBar
-        log("USER_PREF_UPDATED", "User preferences updated: toolbar=$userPreferenceShowMainToolbar, navbar=$userPreferenceShowNavigationBar")
     }
 
     private fun restoreOriginalState() {

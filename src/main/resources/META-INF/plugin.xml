@@ -14,6 +14,9 @@
                 instance="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUIConfigurable"
                 id="com.github.hovrawl.jetbrainstoggleabletoolwindows.settings.CompactUiConfigurable"
                 displayName="Compact UI"/>
+
+        <!-- Initialize Immersive Top Bar manager on project startup -->
+        <projectActivity implementation="com.github.hovrawl.jetbrainstoggleabletoolwindows.startup.ImmersiveTopBarStartupActivity"/>
     </extensions>
 
     <actions>

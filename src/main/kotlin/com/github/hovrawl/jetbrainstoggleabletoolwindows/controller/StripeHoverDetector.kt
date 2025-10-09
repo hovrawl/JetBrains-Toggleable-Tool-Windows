@@ -5,16 +5,19 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.WindowManager
 import java.awt.Component
+import java.awt.Container
+import java.awt.Window
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.AbstractButton
 import javax.swing.JComponent
 
 /**
  * Helper class to detect hover events on tool window stripe icons.
- * This uses a best-effort approach to find stripe components in the UI hierarchy.
+ * Best-effort approach that scans the project frame for components that look like stripe buttons.
  */
 class StripeHoverDetector(
     private val project: Project,
@@ -24,7 +27,8 @@ class StripeHoverDetector(
     private val stripeListeners = mutableMapOf<Component, MouseAdapter>()
 
     fun install() {
-        // Try to find and install listeners on stripe components
+        // Re-scan and (re)install listeners on stripe components
+        uninstall()
         ApplicationManager.getApplication().invokeLater {
             tryInstallStripeListeners()
         }
@@ -32,88 +36,82 @@ class StripeHoverDetector(
 
     fun uninstall() {
         stripeListeners.forEach { (component, listener) ->
-            component.removeMouseListener(listener)
+            runCatching { component.removeMouseListener(listener) }
         }
         stripeListeners.clear()
     }
 
     private fun tryInstallStripeListeners() {
-        try {
-            val twm = ToolWindowManager.getInstance(project)
-            
-            // For each tool window, try to find its stripe button component
-            twm.toolWindowIds.forEach { id ->
-                val toolWindow = twm.getToolWindow(id)
-                toolWindow?.let {
-                    tryInstallListenerForToolWindow(it)
-                }
-            }
-        } catch (e: Exception) {
-            if (isDebugLoggingEnabled()) {
-                logger.info("Could not install stripe listeners (this is expected with internal API changes): ${e.message}")
-            }
-        }
-    }
+        val frame: Window = WindowManager.getInstance().getFrame(project) ?: return
 
-    private fun tryInstallListenerForToolWindow(toolWindow: ToolWindow) {
-        try {
-            // This is a best-effort attempt. The stripe button components are not public API.
-            // We try to access them through reflection or by searching the UI hierarchy.
-            
-            // Attempt 1: Try to get the stripe button through the component hierarchy
-            val stripeButton = findStripeButtonComponent(toolWindow)
-            
+        val twm = ToolWindowManager.getInstance(project)
+        val ids = twm.toolWindowIds.toList()
+
+        // For each tool window, try to find a matching stripe button-like component
+        ids.forEach { id ->
+            val toolWindow = twm.getToolWindow(id) ?: return@forEach
+            val stripeButton = findStripeButtonComponent(frame as Container, toolWindow)
             if (stripeButton != null) {
                 installHoverListener(stripeButton, toolWindow)
             } else if (isDebugLoggingEnabled()) {
-                logger.info("Could not find stripe button for ${toolWindow.id}")
-            }
-        } catch (e: Exception) {
-            if (isDebugLoggingEnabled()) {
-                logger.info("Error installing listener for ${toolWindow.id}: ${e.message}")
+                logger.info("StripeHover: no stripe button found for ${toolWindow.id}")
             }
         }
     }
 
-    private fun findStripeButtonComponent(toolWindow: ToolWindow): Component? {
-        // This is a placeholder implementation.
-        // The actual implementation would need to:
-        // 1. Get the ToolWindowManagerImpl instance
-        // 2. Access the ToolWindowsPane
-        // 3. Find the stripe component for the tool window's anchor
-        // 4. Locate the specific button for this tool window
-        
-        // Since this requires internal API access which may not be stable,
-        // we return null for now and rely on the toggle action integration.
-        return null
+    private fun findStripeButtonComponent(root: Container, toolWindow: ToolWindow): Component? {
+        val candidates = mutableListOf<Component>()
+        collectCandidates(root, candidates)
+
+        val expectedTexts = buildSet {
+            add(toolWindow.stripeTitle)
+            add(toolWindow.id)
+        }.filter { it.isNotBlank() }
+
+        // Score candidates: prefer class names containing "StripeButton" and matching text/tooltip
+        return candidates
+            .asSequence()
+            .map { component ->
+                val className = component.javaClass.name
+                val scoreClass = if (className.contains("StripeButton", ignoreCase = true) || className.contains("ToolWindowStripe", ignoreCase = true)) 2 else 0
+                val text = (component as? AbstractButton)?.text ?: component.accessibleContext?.accessibleName ?: component.name ?: ""
+                val tooltip = (component as? JComponent)?.toolTipText ?: ""
+                val matchesText = expectedTexts.any { t -> t.isNotBlank() && (text.contains(t) || tooltip.contains(t)) }
+                val scoreText = if (matchesText) 3 else 0
+                val score = scoreClass + scoreText
+                component to score
+            }
+            .filter { it.second > 0 }
+            .maxByOrNull { it.second }
+            ?.first
+    }
+
+    private fun collectCandidates(container: Container, out: MutableList<Component>) {
+        for (comp in container.components) {
+            out.add(comp)
+            if (comp is Container) collectCandidates(comp, out)
+        }
     }
 
     private fun installHoverListener(component: Component, toolWindow: ToolWindow) {
-        // Remove existing listener if any
-        stripeListeners[component]?.let {
-            component.removeMouseListener(it)
+        // Avoid duplicate listeners
+        stripeListeners[component]?.let { existing ->
+            runCatching { component.removeMouseListener(existing) }
         }
 
         val listener = object : MouseAdapter() {
             override fun mouseEntered(e: MouseEvent) {
                 controller.requestShow(toolWindow.id, "stripe_hover")
             }
-
-            override fun mouseExited(e: MouseEvent) {
-                // Don't immediately hide - the mouse might be moving to the window
-                // The window's own mouse listener will handle the hide
-            }
         }
 
-        component.addMouseListener(listener)
+        runCatching { component.addMouseListener(listener) }
         stripeListeners[component] = listener
 
         if (isDebugLoggingEnabled()) {
-            logger.info("Installed hover listener for ${toolWindow.id}")
+            logger.info("StripeHover: listener installed for ${toolWindow.id} on ${component.javaClass.name}")
         }
     }
 
-    private fun isDebugLoggingEnabled(): Boolean {
-        return CompactUISettings.getInstance().state.debugLogging
-    }
+    private fun isDebugLoggingEnabled(): Boolean = CompactUISettings.getInstance().state.debugLogging
 }

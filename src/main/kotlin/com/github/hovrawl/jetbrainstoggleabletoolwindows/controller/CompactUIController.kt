@@ -6,7 +6,9 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.IdeFocusManager
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.openapi.wm.ToolWindowType
@@ -129,7 +131,6 @@ class CompactUIController(private val project: Project) : Disposable {
             showRequests.remove(id)
         }
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(id) ?: return
         val windowState = windowStates[id]
         
         // Only hide if we're managing this window
@@ -200,7 +201,24 @@ class CompactUIController(private val project: Project) : Disposable {
         val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(id) ?: return
         val windowState = windowStates[id] ?: return
 
-        // Restore original type
+        // Enforce 'only hide when editor refocuses' if enabled
+        val settings = CompactUISettings.getInstance().state
+        if (settings.onlyWhenEditorFocused) {
+            if (!isEditorFocused()) {
+                // Re-schedule until editor regains focus
+                if (isDebugLoggingEnabled()) {
+                    logger.info("HIDE_DEFERRED_EDITOR_FOCUS - $id")
+                }
+                val runnable = Runnable { performHide(id) }
+                // Replace existing hide request with a short retry
+                hideRequests[id]?.let { alarm.cancelRequest(it) }
+                alarm.addRequest(runnable, 200)
+                hideRequests[id] = runnable
+                return
+            }
+        }
+
+        // Restore original type and hide
         ApplicationManager.getApplication().invokeLater {
             toolWindow.setType(windowState.originalType, null)
             toolWindow.hide(null)
@@ -215,6 +233,13 @@ class CompactUIController(private val project: Project) : Disposable {
 
         // Remove mouse listener
         removeWindowMouseListener(toolWindow)
+    }
+
+    private fun isEditorFocused(): Boolean {
+        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return false
+        val editorComponent = editor.component
+        val focusOwner: Component = IdeFocusManager.getInstance(project).focusOwner ?: return false
+        return SwingUtilities.isDescendingFrom(focusOwner, editorComponent)
     }
 
     private fun restoreAllWindowTypes() {
@@ -247,8 +272,8 @@ class CompactUIController(private val project: Project) : Disposable {
     }
 
     private fun installWindowMouseListener(toolWindow: ToolWindow) {
-        val component = toolWindow.component ?: return
-        
+        val component = toolWindow.component
+
         // Remove existing listener if any
         removeWindowMouseListener(toolWindow)
         
@@ -278,7 +303,7 @@ class CompactUIController(private val project: Project) : Disposable {
     }
 
     private fun removeWindowMouseListener(toolWindow: ToolWindow) {
-        val component = toolWindow.component ?: return
+        val component = toolWindow.component
         mouseListeners[component]?.let {
             component.removeMouseListener(it)
             mouseListeners.remove(component)
