@@ -1,133 +1,86 @@
 package com.github.hovrawl.jetbrainstoggleabletoolwindows.settings
 
-import com.github.hovrawl.jetbrainstoggleabletoolwindows.immersive.ImmersiveTopBarManager
-import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.FormBuilder
-import java.awt.BorderLayout
-import javax.swing.*
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.JSpinner
+import javax.swing.SpinnerNumberModel
 
-class CompactUiConfigurable : Configurable {
+class CompactUIConfigurable : SearchableConfigurable {
 
-    private var enableAutoHideCheckBox: JBCheckBox? = null
-    private var revealZoneHeightSpinner: JSpinner? = null
-    private var hideDelaySpinner: JSpinner? = null
-    private var edgePaddingSpinner: JSpinner? = null
-    private var applySidesAndBottomCheckBox: JBCheckBox? = null
-    private var hideNavigationBarCheckBox: JBCheckBox? = null
-    private var enableAnimationCheckBox: JBCheckBox? = null
+    private var enabledCheckBox: JBCheckBox? = null
+    private var hoverDelaySpinner: JSpinner? = null
+    private var autoHideDelaySpinner: JSpinner? = null
+    private var onlyWhenEditorFocusedCheckBox: JBCheckBox? = null
+    private var suppressWhenPinnedCheckBox: JBCheckBox? = null
     private var debugLoggingCheckBox: JBCheckBox? = null
 
-    private var mainPanel: JPanel? = null
+    override fun getId(): String = "compact.ui.settings"
 
     override fun getDisplayName(): String = "Compact UI"
 
     override fun createComponent(): JComponent {
-        enableAutoHideCheckBox = JBCheckBox("Enable Auto-hide Top Bar")
-        revealZoneHeightSpinner = JSpinner(SpinnerNumberModel(4, 2, 24, 1))
-        hideDelaySpinner = JSpinner(SpinnerNumberModel(700, 0, 5000, 50))
-        edgePaddingSpinner = JSpinner(SpinnerNumberModel(4, 0, 32, 1))
-        applySidesAndBottomCheckBox = JBCheckBox("Apply padding to sides and bottom", true)
-        hideNavigationBarCheckBox = JBCheckBox("Hide navigation bar too", true)
-        enableAnimationCheckBox = JBCheckBox("Enable animation (fade/slide)")
-        debugLoggingCheckBox = JBCheckBox("Enable debug logging")
+        val settings = CompactUISettings.getInstance()
+        val state = settings.state
 
-        // Disable animation checkbox (future feature)
-        enableAnimationCheckBox?.isEnabled = false
+        enabledCheckBox = JBCheckBox("Enable Compact UI", state.enabled)
+        
+        hoverDelaySpinner = JSpinner(SpinnerNumberModel(state.hoverActivationDelayMs, 0, 5000, 50))
+        autoHideDelaySpinner = JSpinner(SpinnerNumberModel(state.autoHideDelayMs, 0, 5000, 50))
+        
+        onlyWhenEditorFocusedCheckBox = JBCheckBox("Only hide when editor refocuses", state.onlyWhenEditorFocused)
+        suppressWhenPinnedCheckBox = JBCheckBox("Suppress floating for pinned tool windows", state.suppressWhenPinned)
+        debugLoggingCheckBox = JBCheckBox("Enable debug logging", state.debugLogging)
 
-        val formBuilder = FormBuilder.createFormBuilder()
-            .addComponent(enableAutoHideCheckBox!!)
-            .addLabeledComponent(JBLabel("Reveal zone height (px):"), revealZoneHeightSpinner!!)
-            .addLabeledComponent(JBLabel("Hide delay (ms):"), hideDelaySpinner!!)
-            .addLabeledComponent(JBLabel("Edge padding (px):"), edgePaddingSpinner!!)
-            .addComponent(applySidesAndBottomCheckBox!!)
-            .addComponent(hideNavigationBarCheckBox!!)
-            .addComponent(enableAnimationCheckBox!!)
+        return FormBuilder.createFormBuilder()
+            .addComponent(enabledCheckBox!!)
+            .addLabeledComponent(JBLabel("Hover activation delay (ms):"), hoverDelaySpinner!!)
+            .addLabeledComponent(JBLabel("Auto-hide delay (ms):"), autoHideDelaySpinner!!)
+            .addComponent(onlyWhenEditorFocusedCheckBox!!)
+            .addComponent(suppressWhenPinnedCheckBox!!)
             .addSeparator()
+            .addComponent(JBLabel("Advanced:"))
             .addComponent(debugLoggingCheckBox!!)
             .addComponentFillVertically(JPanel(), 0)
-
-        mainPanel = JPanel(BorderLayout())
-        mainPanel?.add(formBuilder.panel, BorderLayout.NORTH)
-
-        // Add listener to enable/disable dependent components
-        enableAutoHideCheckBox?.addActionListener {
-            updateComponentStates()
-        }
-
-        return mainPanel!!
-    }
-
-    private fun updateComponentStates() {
-        val enabled = enableAutoHideCheckBox?.isSelected == true
-        revealZoneHeightSpinner?.isEnabled = enabled
-        hideDelaySpinner?.isEnabled = enabled
-        edgePaddingSpinner?.isEnabled = enabled
-        applySidesAndBottomCheckBox?.isEnabled = enabled
-        hideNavigationBarCheckBox?.isEnabled = enabled
-        // Animation checkbox stays disabled
+            .panel
     }
 
     override fun isModified(): Boolean {
-        val settings = CompactUISettings.getInstance().state
-        return enableAutoHideCheckBox?.isSelected != settings.enableAutoHideTopBar ||
-                (revealZoneHeightSpinner?.value as? Int) != settings.revealZoneHeight ||
-                (hideDelaySpinner?.value as? Int) != settings.hideDelay ||
-                (edgePaddingSpinner?.value as? Int) != settings.edgePadding ||
-                applySidesAndBottomCheckBox?.isSelected != settings.applySidesAndBottom ||
-                hideNavigationBarCheckBox?.isSelected != settings.hideNavigationBar ||
-                enableAnimationCheckBox?.isSelected != settings.enableAnimation ||
-                debugLoggingCheckBox?.isSelected != settings.debugLogging
+        val state = CompactUISettings.getInstance().state
+        return enabledCheckBox?.isSelected != state.enabled ||
+                hoverDelaySpinner?.value as? Int != state.hoverActivationDelayMs ||
+                autoHideDelaySpinner?.value as? Int != state.autoHideDelayMs ||
+                onlyWhenEditorFocusedCheckBox?.isSelected != state.onlyWhenEditorFocused ||
+                suppressWhenPinnedCheckBox?.isSelected != state.suppressWhenPinned ||
+                debugLoggingCheckBox?.isSelected != state.debugLogging
     }
 
     override fun apply() {
         val settings = CompactUISettings.getInstance()
-        val oldEnabled = settings.state.enableAutoHideTopBar
+        val state = settings.state
         
-        settings.state.enableAutoHideTopBar = enableAutoHideCheckBox?.isSelected ?: false
-        settings.state.revealZoneHeight = revealZoneHeightSpinner?.value as? Int ?: 4
-        settings.state.hideDelay = hideDelaySpinner?.value as? Int ?: 700
-        settings.state.edgePadding = edgePaddingSpinner?.value as? Int ?: 4
-        settings.state.applySidesAndBottom = applySidesAndBottomCheckBox?.isSelected ?: true
-        settings.state.hideNavigationBar = hideNavigationBarCheckBox?.isSelected ?: true
-        settings.state.enableAnimation = enableAnimationCheckBox?.isSelected ?: false
-        settings.state.debugLogging = debugLoggingCheckBox?.isSelected ?: false
+        state.enabled = enabledCheckBox?.isSelected ?: false
+        state.hoverActivationDelayMs = hoverDelaySpinner?.value as? Int ?: 150
+        state.autoHideDelayMs = autoHideDelaySpinner?.value as? Int ?: 500
+        state.onlyWhenEditorFocused = onlyWhenEditorFocusedCheckBox?.isSelected ?: true
+        state.suppressWhenPinned = suppressWhenPinnedCheckBox?.isSelected ?: true
+        state.debugLogging = debugLoggingCheckBox?.isSelected ?: false
 
-        val newEnabled = settings.state.enableAutoHideTopBar
-        
-        // Notify manager of settings change
-        if (oldEnabled != newEnabled) {
-            // Enabled/disabled state changed
-            ImmersiveTopBarManager.getInstance().onSettingsChanged()
-        } else if (newEnabled) {
-            // Settings changed while feature is enabled
-            ImmersiveTopBarManager.getInstance().onSettingsUpdated()
-        }
+        // Notify all open projects to refresh behavior
+        ApplicationManager.getApplication().messageBus.syncPublisher(CompactUISettingsListener.TOPIC).settingsChanged()
     }
 
     override fun reset() {
-        val settings = CompactUISettings.getInstance().state
-        enableAutoHideCheckBox?.isSelected = settings.enableAutoHideTopBar
-        revealZoneHeightSpinner?.value = settings.revealZoneHeight
-        hideDelaySpinner?.value = settings.hideDelay
-        edgePaddingSpinner?.value = settings.edgePadding
-        applySidesAndBottomCheckBox?.isSelected = settings.applySidesAndBottom
-        hideNavigationBarCheckBox?.isSelected = settings.hideNavigationBar
-        enableAnimationCheckBox?.isSelected = settings.enableAnimation
-        debugLoggingCheckBox?.isSelected = settings.debugLogging
-        updateComponentStates()
-    }
-
-    override fun disposeUIResources() {
-        mainPanel = null
-        enableAutoHideCheckBox = null
-        revealZoneHeightSpinner = null
-        hideDelaySpinner = null
-        edgePaddingSpinner = null
-        applySidesAndBottomCheckBox = null
-        hideNavigationBarCheckBox = null
-        enableAnimationCheckBox = null
-        debugLoggingCheckBox = null
+        val state = CompactUISettings.getInstance().state
+        enabledCheckBox?.isSelected = state.enabled
+        hoverDelaySpinner?.value = state.hoverActivationDelayMs
+        autoHideDelaySpinner?.value = state.autoHideDelayMs
+        onlyWhenEditorFocusedCheckBox?.isSelected = state.onlyWhenEditorFocused
+        suppressWhenPinnedCheckBox?.isSelected = state.suppressWhenPinned
+        debugLoggingCheckBox?.isSelected = state.debugLogging
     }
 }
