@@ -29,7 +29,8 @@ class CompactUIController(private val project: Project) : Disposable {
     // State tracking
     private data class WindowState(
         val originalType: ToolWindowType,
-        var isFloatingByCompactUI: Boolean = false
+        val originalAutoHide: Boolean,
+        var isManagedByCompactUI: Boolean = false
     )
     
     private val windowStates = mutableMapOf<String, WindowState>()
@@ -49,9 +50,17 @@ class CompactUIController(private val project: Project) : Disposable {
             ToolWindowManagerListener.TOPIC,
             object : ToolWindowManagerListener {
                 override fun stateChanged(toolWindowManager: ToolWindowManager) {
-                    // Tool window state changed - we might need to refresh
-                    if (isDebugLoggingEnabled()) {
-                        logger.info("Tool window state changed")
+                    // Restore any Compact UI-managed window that is no longer visible (auto-hidden by IDE)
+                    windowStates.keys.toList().forEach { id ->
+                        val state = windowStates[id] ?: return@forEach
+                        if (!state.isManagedByCompactUI) return@forEach
+                        val tw = toolWindowManager.getToolWindow(id) ?: return@forEach
+                        if (!tw.isVisible) {
+                            restoreWindowState(id)
+                            if (isDebugLoggingEnabled()) {
+                                logger.info("STATE_SYNC - Restored $id after IDE auto-hide")
+                            }
+                        }
                     }
                 }
             }
@@ -71,9 +80,12 @@ class CompactUIController(private val project: Project) : Disposable {
     private fun handleSettingsChanged() {
         val settings = CompactUISettings.getInstance().state
         if (!settings.enabled) {
-            // Compact UI was disabled - restore all floating windows
+            // Compact UI was disabled - restore all managed windows
             forceHideAll()
             restoreAllWindowTypes()
+        } else {
+            // Re-install hover detection when enabled to catch late UI construction
+            stripeHoverDetector.install()
         }
         if (isDebugLoggingEnabled()) {
             logger.info("Settings changed - enabled: ${settings.enabled}")
@@ -91,9 +103,12 @@ class CompactUIController(private val project: Project) : Disposable {
 
         val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(id) ?: return
         
-        if (!isEligible(toolWindow)) {
+        // Allow pinned windows when the request originates from a toggle action
+        val bypassPinnedSuppression = trigger == "toggle_action"
+
+        if (!isEligible(toolWindow, bypassPinnedSuppression)) {
             if (isDebugLoggingEnabled()) {
-                if (settings.suppressWhenPinned && !toolWindow.isAutoHide) {
+                if (settings.suppressWhenPinned && !toolWindow.isAutoHide && !bypassPinnedSuppression) {
                     logger.info("SUPPRESSED_PINNED - $id is pinned (isAutoHide=false)")
                 } else {
                     logger.info("NOT_ELIGIBLE - $id")
@@ -134,7 +149,7 @@ class CompactUIController(private val project: Project) : Disposable {
         val windowState = windowStates[id]
         
         // Only hide if we're managing this window
-        if (windowState?.isFloatingByCompactUI != true) return
+        if (windowState?.isManagedByCompactUI != true) return
 
         if (isDebugLoggingEnabled()) {
             logger.info("HIDE_SCHEDULED - $id, reason: $reason, delay: ${settings.autoHideDelayMs}ms")
@@ -155,7 +170,7 @@ class CompactUIController(private val project: Project) : Disposable {
 
         // Hide all windows we're managing
         windowStates.keys.toList().forEach { id ->
-            if (windowStates[id]?.isFloatingByCompactUI == true) {
+            if (windowStates[id]?.isManagedByCompactUI == true) {
                 performHide(id)
             }
         }
@@ -164,33 +179,37 @@ class CompactUIController(private val project: Project) : Disposable {
     private fun performShow(id: String) {
         val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(id) ?: return
         
-        // Store original type if not already stored
+        // Store original type and auto-hide if not already stored
         if (!windowStates.containsKey(id)) {
             windowStates[id] = WindowState(
                 originalType = toolWindow.type,
-                isFloatingByCompactUI = false
+                originalAutoHide = toolWindow.isAutoHide,
+                isManagedByCompactUI = false
             )
         }
 
-        // Change to floating type if not already
-        if (toolWindow.type != ToolWindowType.FLOATING) {
-            ApplicationManager.getApplication().invokeLater {
-                toolWindow.setType(ToolWindowType.FLOATING, null)
-            }
-        }
-
-        // Show the window
+        // Use SLIDING + auto-hide for overlay behavior that collapses when clicking off
         ApplicationManager.getApplication().invokeLater {
+//            try {
+//                if (!toolWindow.isAutoHide) toolWindow.setAutoHide(true)
+//            } catch (_: Throwable) {
+//                // setAutoHide may not be available in some builds; ignore
+//            }
+            if (toolWindow.type != ToolWindowType.SLIDING) {
+                toolWindow.setType(ToolWindowType.SLIDING, null)
+            }
             if (!toolWindow.isVisible) {
-                toolWindow.show(null)
+                toolWindow.activate(null, true)
+            } else {
+                toolWindow.activate(null, true)
             }
         }
 
-        windowStates[id]?.isFloatingByCompactUI = true
+        windowStates[id]?.isManagedByCompactUI = true
         showRequests.remove(id)
 
         if (isDebugLoggingEnabled()) {
-            logger.info("SHOW_COMMIT - $id")
+            logger.info("SHOW_COMMIT - $id (SLIDING+autoHide)")
         }
 
         // Install mouse listener on the tool window to detect when mouse leaves
@@ -205,12 +224,10 @@ class CompactUIController(private val project: Project) : Disposable {
         val settings = CompactUISettings.getInstance().state
         if (settings.onlyWhenEditorFocused) {
             if (!isEditorFocused()) {
-                // Re-schedule until editor regains focus
                 if (isDebugLoggingEnabled()) {
                     logger.info("HIDE_DEFERRED_EDITOR_FOCUS - $id")
                 }
                 val runnable = Runnable { performHide(id) }
-                // Replace existing hide request with a short retry
                 hideRequests[id]?.let { alarm.cancelRequest(it) }
                 alarm.addRequest(runnable, 200)
                 hideRequests[id] = runnable
@@ -218,17 +235,22 @@ class CompactUIController(private val project: Project) : Disposable {
             }
         }
 
-        // Restore original type and hide
+        // Restore original type and auto-hide, then hide
         ApplicationManager.getApplication().invokeLater {
             toolWindow.setType(windowState.originalType, null)
+//            try {
+//                toolWindow.setAutoHide(windowState.originalAutoHide)
+//            } catch (_: Throwable) {
+//                // Ignore if not available
+//            }
             toolWindow.hide(null)
         }
 
-        windowState.isFloatingByCompactUI = false
+        windowState.isManagedByCompactUI = false
         hideRequests.remove(id)
 
         if (isDebugLoggingEnabled()) {
-            logger.info("HIDE_COMMIT - $id")
+            logger.info("HIDE_COMMIT - $id (restored type & autoHide)")
         }
 
         // Remove mouse listener
@@ -244,11 +266,16 @@ class CompactUIController(private val project: Project) : Disposable {
 
     private fun restoreAllWindowTypes() {
         windowStates.forEach { (id, state) ->
-            if (state.isFloatingByCompactUI) {
+            if (state.isManagedByCompactUI) {
                 val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(id)
                 toolWindow?.let {
                     ApplicationManager.getApplication().invokeLater {
                         it.setType(state.originalType, null)
+//                        try {
+//                            it.setAutoHide(state.originalAutoHide)
+//                        } catch (_: Throwable) {
+//                            // ignore if not available
+//                        }
                     }
                 }
             }
@@ -256,15 +283,14 @@ class CompactUIController(private val project: Project) : Disposable {
         windowStates.clear()
     }
 
-    private fun isEligible(toolWindow: ToolWindow): Boolean {
+    private fun isEligible(toolWindow: ToolWindow, bypassPinnedSuppression: Boolean = false): Boolean {
         val settings = CompactUISettings.getInstance().state
         
         if (!settings.enabled) return false
         if (!toolWindow.isAvailable) return false
         
-        // Check if pinned windows should be suppressed
-        // In IntelliJ: isAutoHide = true means unpinned, isAutoHide = false means pinned
-        if (settings.suppressWhenPinned && !toolWindow.isAutoHide) {
+        // Check if pinned windows should be suppressed (unless bypassed)
+        if (!bypassPinnedSuppression && settings.suppressWhenPinned && !toolWindow.isAutoHide) {
             return false
         }
         
@@ -332,6 +358,22 @@ class CompactUIController(private val project: Project) : Disposable {
 
         // Restore all window types
         restoreAllWindowTypes()
+    }
+
+    private fun restoreWindowState(id: String) {
+        val state = windowStates[id] ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(id) ?: return
+        ApplicationManager.getApplication().invokeLater {
+            toolWindow.setType(state.originalType, null)
+//            try {
+//                toolWindow.setAutoHide(state.originalAutoHide)
+//            } catch (_: Throwable) {
+//                // ignore if not available
+//            }
+        }
+        state.isManagedByCompactUI = false
+        // Also remove any mouse listener in case it was still attached
+        removeWindowMouseListener(toolWindow)
     }
 
     companion object {

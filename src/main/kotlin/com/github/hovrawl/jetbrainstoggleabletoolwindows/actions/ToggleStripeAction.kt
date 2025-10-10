@@ -74,26 +74,23 @@ abstract class ToggleIslandAction(private val targetAnchor: ToolWindowAnchor) : 
         val controller = CompactUIController.getInstance(project)
         val service = project.getService(RememberedToolWindowsService::class.java)
 
-        // Collect all visible tool windows on the target island that are managed by Compact UI
+        // Collect all visible tool windows on the target island
         val visibleOnIsland: List<ToolWindow> = twm.toolWindowIds
             .mapNotNull { twm.getToolWindow(it) }
             .filter { it.anchor == targetAnchor && it.isVisible }
 
         if (visibleOnIsland.isNotEmpty()) {
-            // Hide all visible windows on this island
-            val idsToRemember = visibleOnIsland.map { it.id }
-            service.rememberIds(targetAnchor, idsToRemember)
-            controller.forceHideAll()
+            // Remember and hide all visible windows on this island using standard API (controller manages only floating windows)
+            service.rememberIds(targetAnchor, visibleOnIsland.map { it.id })
+            visibleOnIsland.forEach { it.hide(null) }
             return
         }
 
-        // Show remembered windows
+        // Show remembered windows (use controller for floating presentation)
         val rememberedIds = service.getRememberedIds(targetAnchor)
         if (rememberedIds.isNotEmpty()) {
-            // In Compact UI mode, show the first remembered window
             controller.requestShow(rememberedIds.first(), "toggle_action")
         } else {
-            // Find first available window on the island
             val firstWindow = findFirstAvailableToolWindowOnIsland(twm, targetAnchor)
             firstWindow?.let {
                 controller.requestShow(it.id, "toggle_action")
