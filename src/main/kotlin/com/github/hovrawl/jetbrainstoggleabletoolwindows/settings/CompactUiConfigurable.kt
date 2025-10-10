@@ -35,10 +35,10 @@ class CompactUIConfigurable : SearchableConfigurable {
         val state = CompactUISettings.getInstance().state
 
         enabledCheckBox = JBCheckBox("Enable Compact UI", state.enabled)
-        
+
         hoverDelaySpinner = JSpinner(SpinnerNumberModel(state.hoverActivationDelayMs, 0, 5000, 50))
         autoHideDelaySpinner = JSpinner(SpinnerNumberModel(state.autoHideDelayMs, 0, 5000, 50))
-        
+
         onlyWhenEditorFocusedCheckBox = JBCheckBox("Only hide when editor refocuses", state.onlyWhenEditorFocused)
         suppressWhenPinnedCheckBox = JBCheckBox("Suppress floating for pinned tool windows", state.suppressWhenPinned)
         debugLoggingCheckBox = JBCheckBox("Enable debug logging", state.debugLogging)
@@ -94,7 +94,7 @@ class CompactUIConfigurable : SearchableConfigurable {
     override fun apply() {
         val settings = CompactUISettings.getInstance()
         val state = settings.state
-        
+
         // Compact UI
         state.enabled = enabledCheckBox?.isSelected ?: false
         state.hoverActivationDelayMs = (hoverDelaySpinner?.value as? Int) ?: 150
